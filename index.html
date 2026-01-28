@@ -3,120 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تطبيق العمال والسلف</title>
+    <title>سجل العمال - النسخة الزجاجية</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; padding-bottom: 80px; /* مسافة للشريط السفلي */ }
+        /* الخلفية والأنميشن الأساسي */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(45deg, #1a2a6c, #b21f1f, #fdbb2d);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            min-height: 100vh;
+            padding-bottom: 90px; /* مسافة للشريط السفلي */
+            color: #fff;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* التصميم الزجاجي (Glassmorphism) */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            margin-bottom: 15px;
+            color: white;
+            transition: transform 0.2s;
+        }
         
-        /* تنسيق البطاقات */
-        .card-custom { border: none; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); background: white; margin-bottom: 15px; }
+        .glass-input, .glass-select {
+            background: rgba(255, 255, 255, 0.2) !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            color: #fff !important;
+        }
         
-        /* تنسيق الشريط السفلي */
+        .glass-input::placeholder { color: rgba(255, 255, 255, 0.7); }
+        .glass-input:focus {
+            background: rgba(255, 255, 255, 0.3) !important;
+            box-shadow: 0 0 10px rgba(255,255,255,0.2);
+        }
+
+        /* تخصيص الجدول الزجاجي */
+        .table-glass {
+            color: white;
+            border-color: rgba(255,255,255,0.2);
+        }
+        .table-glass th, .table-glass td {
+            background: transparent;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            vertical-align: middle;
+        }
+
+        /* الشريط السفلي الزجاجي */
         .bottom-nav {
-            position: fixed; bottom: 0; left: 0; width: 100%;
-            background: white; border-top: 1px solid #ddd;
+            position: fixed; bottom: 15px; left: 15px; right: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
             display: flex; justify-content: space-around;
             padding: 10px 0; z-index: 1000;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
         }
-        .nav-item { text-align: center; color: #6c757d; cursor: pointer; flex: 1; }
-        .nav-item.active { color: #0d6efd; font-weight: bold; }
-        .nav-icon { font-size: 1.5rem; display: block; margin-bottom: 2px; }
-        .nav-text { font-size: 0.8rem; }
+        .nav-item { text-align: center; color: rgba(255,255,255,0.6); cursor: pointer; flex: 1; transition: 0.3s; }
+        .nav-item.active { color: #fff; transform: scale(1.1); text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .nav-icon { font-size: 1.6rem; display: block; }
+        .nav-text { font-size: 0.75rem; }
 
-        /* إخفاء واظهار التبويبات */
-        .tab-content { display: none; animation: fadeIn 0.3s; }
+        /* أزرار الحضور */
+        .btn-check-custom {
+            font-size: 1.5rem; cursor: pointer; transition: 0.2s;
+            opacity: 0.5; filter: grayscale(100%);
+        }
+        .btn-check-custom.checked {
+            opacity: 1; filter: grayscale(0%); transform: scale(1.2);
+            text-shadow: 0 0 15px #00ff00;
+        }
+
+        /* تحسينات عامة */
+        .tab-content { display: none; animation: fadeIn 0.5s; }
         .tab-content.active { display: block; }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        .balance-pos { color: green; font-weight: bold; }
-        .balance-neg { color: red; font-weight: bold; }
+        .balance-pos { color: #76ff03; font-weight: bold; text-shadow: 0 0 5px rgba(0,0,0,0.5); }
+        .balance-neg { color: #ff5252; font-weight: bold; text-shadow: 0 0 5px rgba(0,0,0,0.5); }
+
+        /* تخصيص القوائم المنسدلة */
+        option { background-color: #333; color: white; }
     </style>
 </head>
 <body>
 
-<div class="container py-3">
+<div class="container py-4">
 
     <div id="tab-home" class="tab-content active">
-        <h4 class="text-center mb-3">👷‍♂️ قائمة العمال</h4>
+        <h3 class="text-center mb-4 fw-bold" style="text-shadow: 0 2px 4px rgba(0,0,0,0.3);">📋 سجل الحضور والعمال</h3>
         
-        <div class="card card-custom p-3">
+        <div class="glass-card p-3">
             <div class="table-responsive">
-                <table class="table table-bordered text-center align-middle mb-0">
-                    <thead class="table-light">
+                <table class="table table-glass text-center mb-0">
+                    <thead>
                         <tr>
-                            <th>الاسم</th>
-                            <th>صافي الحساب</th>
-                            <th>إجراء</th>
+                            <th width="40%">الاسم</th>
+                            <th width="30%">حضور اليوم</th>
+                            <th width="30%">الباقي له</th>
                         </tr>
                     </thead>
                     <tbody id="mainTableBody">
                         </tbody>
                 </table>
             </div>
-            <div class="text-center mt-3 text-muted" id="emptyMsg">
-                <small>لا يوجد عمال.. انتقل لتبويب "إضافة" للبدء</small>
+            <div class="text-center mt-3" id="emptyMsg">
+                <small style="opacity: 0.7;">القائمة فارغة.. أضف عمالاً أولاً 👇</small>
             </div>
         </div>
     </div>
 
     <div id="tab-loans" class="tab-content">
-        <h4 class="text-center mb-3 text-danger">💰 إدارة السلف</h4>
+        <h3 class="text-center mb-4 fw-bold">💰 إدارة السلف</h3>
         
-        <div class="card card-custom p-3">
-            <label class="form-label fw-bold">اختر العامل:</label>
-            <select id="workerSelect" class="form-select mb-3" onchange="loadWorkerHistory()">
-                <option value="">-- اختر --</option>
+        <div class="glass-card p-3">
+            <label class="mb-2 fw-bold">اختر العامل:</label>
+            <select id="workerSelect" class="form-select glass-select mb-3" onchange="loadWorkerHistory()">
+                <option value="">-- اختر من القائمة --</option>
             </select>
 
-            <div class="row text-center mb-3">
+            <div class="row text-center mb-3 g-2">
                 <div class="col-6">
-                    <div class="p-2 bg-light rounded">
-                        <small>مجموع السلف</small>
-                        <div id="dispTotalWithdraw" class="text-danger fw-bold">0</div>
+                    <div class="p-2" style="background: rgba(255,0,0,0.2); border-radius: 10px;">
+                        <small>مسحوبات (عليه)</small>
+                        <div id="dispTotalWithdraw" class="fw-bold text-white">0</div>
                     </div>
                 </div>
                 <div class="col-6">
-                    <div class="p-2 bg-light rounded">
-                        <small>الباقي له</small>
-                        <div id="dispBalance" class="fw-bold">0</div>
+                    <div class="p-2" style="background: rgba(0,255,0,0.2); border-radius: 10px;">
+                        <small>الصافي (الباقي)</small>
+                        <div id="dispBalance" class="fw-bold text-white">0</div>
                     </div>
                 </div>
             </div>
 
-            <hr>
-            <h6>تسجيل حركة جديدة:</h6>
+            <hr style="border-color: rgba(255,255,255,0.3)">
+            
+            <h6>تسجيل حركة يدوية:</h6>
             <div class="input-group mb-2">
-                <span class="input-group-text">المبلغ</span>
-                <input type="number" id="transAmount" class="form-control">
+                <input type="number" id="transAmount" class="form-control glass-input" placeholder="المبلغ...">
             </div>
             <div class="d-flex gap-2">
-                <button class="btn btn-danger flex-grow-1" onclick="addTransaction('withdraw')">إعطاء سلفة 📤</button>
-                <button class="btn btn-success flex-grow-1" onclick="addTransaction('wage')">تسجيل يومية 📥</button>
+                <button class="btn btn-danger w-50" style="backdrop-filter: blur(5px);" onclick="addTransaction('withdraw')">سحب سلفة 💸</button>
+                <button class="btn btn-success w-50" style="backdrop-filter: blur(5px);" onclick="addTransaction('wage')">تنزيل يومية 🔨</button>
             </div>
         </div>
 
-        <h6 class="mt-3">سجل الحركات:</h6>
-        <div class="card card-custom p-2">
-            <table class="table table-sm table-striped text-center mb-0" style="font-size: 0.9rem;">
-                <thead><tr><th>التاريخ</th><th>الحركة</th><th>المبلغ</th></tr></thead>
+        <h6 class="mt-3 px-2">آخر الحركات:</h6>
+        <div class="glass-card p-2">
+            <table class="table table-glass table-sm text-center mb-0" style="font-size: 0.9rem;">
+                <thead><tr><th>التاريخ</th><th>النوع</th><th>المبلغ</th></tr></thead>
                 <tbody id="historyTableBody"></tbody>
             </table>
         </div>
     </div>
 
     <div id="tab-add" class="tab-content">
-        <h4 class="text-center mb-3">➕ إضافة عامل جديد</h4>
-        <div class="card card-custom p-4">
-            <div class="mb-3">
-                <label class="form-label">اسم العامل الكامل:</label>
-                <input type="text" id="newWorkerName" class="form-control form-control-lg">
+        <h3 class="text-center mb-4 fw-bold">➕ إضافة عامل جديد</h3>
+        <div class="glass-card p-4">
+            <div class="mb-4">
+                <label class="form-label">اسم العامل:</label>
+                <input type="text" id="newWorkerName" class="form-control glass-input form-control-lg" placeholder="اكتب الاسم هنا...">
             </div>
-            <button class="btn btn-primary w-100 btn-lg" onclick="addNewWorker()">حفظ العامل</button>
-        </div>
-        <div class="alert alert-info mt-3">
-            <small>💡 بعد إضافة العامل، انتقل لقسم "السلف" لتسجيل يومياته أو مسحوباته.</small>
+            <button class="btn btn-light w-100 btn-lg fw-bold" style="color: #333;" onclick="addNewWorker()">حفظ العامل ✅</button>
         </div>
     </div>
 
@@ -125,7 +185,7 @@
 <nav class="bottom-nav">
     <div class="nav-item active" onclick="switchTab('home', this)">
         <span class="nav-icon">👷‍♂️</span>
-        <span class="nav-text">العمال</span>
+        <span class="nav-text">الرئيسية</span>
     </div>
     <div class="nav-item" onclick="switchTab('loans', this)">
         <span class="nav-icon">💰</span>
@@ -137,33 +197,28 @@
     </div>
 </nav>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // === البيانات ===
-    let workers = JSON.parse(localStorage.getItem('workersApp_Tabs')) || [];
+    let workers = JSON.parse(localStorage.getItem('workersApp_Glass')) || [];
 
-    // === عند التحميل ===
     window.onload = function() {
         renderMainTable();
         updateSelectMenu();
     };
 
-    // === 1. التنقل بين التبويبات ===
+    // === التنقل بين التبويبات ===
     function switchTab(tabName, navElement) {
-        // إخفاء كل التبويبات
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        // إظهار التبويب المطلوب
         document.getElementById('tab-' + tabName).classList.add('active');
-
-        // تحديث ألوان الأزرار السفلية
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         navElement.classList.add('active');
         
-        // تحديث البيانات عند التنقل
         if(tabName === 'home') renderMainTable();
         if(tabName === 'loans') updateSelectMenu();
     }
 
-    // === 2. إضافة عامل جديد (تبويب إضافة) ===
+    // === 1. إضافة عامل جديد ===
     function addNewWorker() {
         const nameInp = document.getElementById('newWorkerName');
         const name = nameInp.value.trim();
@@ -172,38 +227,75 @@
         workers.push({ name: name, history: [] });
         saveData();
         nameInp.value = '';
-        alert("تمت الإضافة بنجاح ✅");
         
-        // الانتقال تلقائياً للرئيسية
+        // عودة للرئيسية
         document.querySelector('.nav-item:first-child').click(); 
     }
 
-    // === 3. عرض الجدول الرئيسي (تبويب العمال) ===
+    // === 2. الجدول الرئيسي + منطق الحضور (✅) ===
     function renderMainTable() {
         const tbody = document.getElementById('mainTableBody');
         tbody.innerHTML = '';
         
         if(workers.length > 0) document.getElementById('emptyMsg').style.display = 'none';
 
+        const today = new Date().toISOString().split('T')[0];
+
         workers.forEach((worker, index) => {
-            let balance = calculateBalance(worker);
-            let colorClass = balance >= 0 ? 'balance-pos' : 'balance-neg'; // أخضر أو أحمر
+            // التحقق هل حضر اليوم؟ (هل توجد يومية مسجلة بتاريخ اليوم)
+            const workedToday = worker.history.some(h => h.date === today && h.type === 'wage');
             
+            // حساب الرصيد
+            let balance = calculateBalance(worker);
+            let colorClass = balance >= 0 ? 'balance-pos' : 'balance-neg';
+            
+            // أيقونة الحضور
+            let checkIcon = workedToday ? '✅' : '⬜';
+            let checkClass = workedToday ? 'btn-check-custom checked' : 'btn-check-custom';
+
             tbody.innerHTML += `
                 <tr>
-                    <td>${worker.name}</td>
-                    <td class="${colorClass}" style="direction:ltr">${balance.toLocaleString()}</td>
+                    <td class="fw-bold">${worker.name}</td>
                     <td>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="goToLoans(${index})">
-                            كشف 📄
-                        </button>
+                        <div class="${checkClass}" onclick="toggleAttendance(${index})">
+                            ${checkIcon}
+                        </div>
                     </td>
+                    <td class="${colorClass}" style="direction:ltr">${balance.toLocaleString()}</td>
                 </tr>
             `;
         });
     }
 
-    // === 4. قسم السلف (تبويب السلف) ===
+    // === تسجيل الحضور السريع من القائمة ===
+    function toggleAttendance(index) {
+        const today = new Date().toISOString().split('T')[0];
+        const worker = workers[index];
+        const alreadyPresent = worker.history.some(h => h.date === today && h.type === 'wage');
+
+        if (alreadyPresent) {
+            if(confirm("هل تريد إلغاء تحضير هذا العامل لليوم؟ (سيتم حذف يومية اليوم)")) {
+                // حذف سجلات اليومية لهذا اليوم
+                worker.history = worker.history.filter(h => !(h.date === today && h.type === 'wage'));
+                saveData();
+                renderMainTable();
+            }
+        } else {
+            // طلب سعر اليومية
+            let wage = prompt("أدخل قيمة اليومية للعامل " + worker.name + ":", "25000");
+            if (wage && !isNaN(wage)) {
+                worker.history.push({
+                    date: today,
+                    type: 'wage',
+                    amount: parseFloat(wage)
+                });
+                saveData();
+                renderMainTable();
+            }
+        }
+    }
+
+    // === 3. قسم السلف ===
     function updateSelectMenu() {
         const select = document.getElementById('workerSelect');
         const oldVal = select.value;
@@ -212,18 +304,6 @@
             select.innerHTML += `<option value="${i}">${w.name}</option>`;
         });
         select.value = oldVal;
-    }
-
-    // دالة مساعدة للانتقال من زر "كشف" في الرئيسية إلى قسم السلف مباشرة
-    function goToLoans(index) {
-        // محاكاة الضغط على تبويب السلف
-        const loansTabBtn = document.querySelectorAll('.nav-item')[1]; 
-        switchTab('loans', loansTabBtn);
-        
-        // اختيار العامل وتحديث بياناته
-        const select = document.getElementById('workerSelect');
-        select.value = index;
-        loadWorkerHistory();
     }
 
     function loadWorkerHistory() {
@@ -261,7 +341,7 @@
         dispTotal.innerText = totalWithdraw.toLocaleString();
         let finalBal = totalWage - totalWithdraw;
         dispBal.innerText = finalBal.toLocaleString();
-        dispBal.className = finalBal >= 0 ? 'fw-bold text-success' : 'fw-bold text-danger';
+        // تلوين الرصيد بالأبيض ليكون واضحاً على الخلفية الزجاجية
     }
 
     function addTransaction(type) {
@@ -273,16 +353,16 @@
 
         workers[index].history.push({
             date: new Date().toISOString().split('T')[0],
-            type: type, // 'wage' or 'withdraw'
+            type: type, 
             amount: amount
         });
         
         saveData();
         document.getElementById('transAmount').value = '';
-        loadWorkerHistory(); // تحديث الجدول فوراً
+        loadWorkerHistory(); 
     }
 
-    // === أدوات مساعدة ===
+    // === أدوات ===
     function calculateBalance(worker) {
         let w = 0, wd = 0;
         worker.history.forEach(h => {
@@ -293,7 +373,7 @@
     }
 
     function saveData() {
-        localStorage.setItem('workersApp_Tabs', JSON.stringify(workers));
+        localStorage.setItem('workersApp_Glass', JSON.stringify(workers));
     }
 </script>
 
