@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سجل العمال - النسخة الكاملة</title>
+    <title>سجل العمال - النسخة المعدلة</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         /* الخلفية والأنميشن الأساسي */
@@ -125,9 +125,9 @@
                 <table class="table table-glass text-center mb-0">
                     <thead>
                         <tr>
-                            <th width="40%">الاسم</th>
+                            <th width="10%">#</th> <th width="40%">الاسم</th>
                             <th width="20%">حضور</th>
-                            <th width="40%">الباقي له</th>
+                            <th width="30%">الباقي له</th>
                         </tr>
                     </thead>
                     <tbody id="mainTableBody">
@@ -209,16 +209,12 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content modal-content-glass">
             <div class="modal-header border-bottom-0">
-                <h5 class="modal-title" id="attModalTitle">سجل الحضور</h5>
+                <h5 class="modal-title" id="attModalTitle">سجل الحضور والغياب</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <h6 class="text-success mb-2">✅ الأيام التي حضر فيها (عمل):</h6>
-                <ul class="list-group mb-3" id="attPresentList" style="max-height: 200px; overflow-y: auto;">
+                <ul class="list-group mb-3" id="attPresentList" style="max-height: 300px; overflow-y: auto;">
                     </ul>
-                <div class="alert alert-dark p-2 text-center">
-                    <small>ملاحظة: الأيام غير المذكورة تعتبر غياب أو توقف.</small>
-                </div>
             </div>
         </div>
     </div>
@@ -246,7 +242,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // === البيانات ===
-    let workers = JSON.parse(localStorage.getItem('workersApp_Glass_v2')) || [];
+    let workers = JSON.parse(localStorage.getItem('workersApp_Glass_v3')) || [];
     const attendanceModal = new bootstrap.Modal(document.getElementById('attendanceModal'));
 
     window.onload = function() {
@@ -293,15 +289,20 @@
         const today = new Date().toISOString().split('T')[0];
 
         workers.forEach((worker, index) => {
-            const workedToday = worker.history.some(h => h.date === today && h.type === 'wage');
+            // فحص حالة اليوم: هل هو حضور (wage) أو غياب (absent)
+            const todayRecord = worker.history.find(h => h.date === today && (h.type === 'wage' || h.type === 'absent'));
+            const isPresent = todayRecord && todayRecord.type === 'wage';
+            
             let balance = calculateBalance(worker);
             let colorClass = balance >= 0 ? 'balance-pos' : 'balance-neg';
-            let checkIcon = workedToday ? '✅' : '⬜';
-            let checkClass = workedToday ? 'btn-check-custom checked' : 'btn-check-custom';
+            
+            // إذا كان حاضر = صح ملونة، إذا لا (غياب أو لم يحدد) = فارغ
+            let checkIcon = isPresent ? '✅' : '⬜';
+            let checkClass = isPresent ? 'btn-check-custom checked' : 'btn-check-custom';
 
             tbody.innerHTML += `
                 <tr>
-                    <td class="fw-bold">${worker.name}</td>
+                    <td>${index + 1}</td> <td class="fw-bold">${worker.name}</td>
                     <td><div class="${checkClass}" onclick="toggleAttendance(${index})">${checkIcon}</div></td>
                     <td class="${colorClass}" style="direction:ltr">${formatMoney(balance)}</td>
                 </tr>
@@ -309,25 +310,38 @@
         });
     }
 
+    // دالة تبديل الحضور (صح = حضور، إزالة الصح = غياب)
     function toggleAttendance(index) {
         const today = new Date().toISOString().split('T')[0];
         const worker = workers[index];
-        const alreadyPresent = worker.history.some(h => h.date === today && h.type === 'wage');
+        
+        // البحث عن أي سجل مسجل اليوم (سواء حضور أو غياب) وحذفه أولاً
+        const existingRecordIndex = worker.history.findIndex(h => h.date === today && (h.type === 'wage' || h.type === 'absent'));
+        const wasPresent = existingRecordIndex !== -1 && worker.history[existingRecordIndex].type === 'wage';
 
-        if (alreadyPresent) {
-            if(confirm("هل تريد إلغاء تحضير هذا العامل لليوم؟")) {
-                worker.history = worker.history.filter(h => !(h.date === today && h.type === 'wage'));
-                saveData();
-                renderMainTable();
+        // حذف السجل القديم لهذا اليوم (لإعادة الكتابة)
+        if (existingRecordIndex !== -1) {
+            worker.history.splice(existingRecordIndex, 1);
+        }
+
+        if (wasPresent) {
+            // إذا كان حاضر وضغطنا، يتحول إلى غياب (بدون علامة صح)
+            if(confirm("تحويل الحالة إلى غياب؟")) {
+                worker.history.push({ date: today, type: 'absent', amount: 0 });
+            } else {
+                // إلغاء العملية، إعادة الحضور
+                worker.history.push({ date: today, type: 'wage', amount: 25000 }); // قيمة افتراضية للاسترجاع
             }
         } else {
+            // إذا كان غائب (أو غير مسجل) وضغطنا، يتحول إلى حضور
             let wage = prompt("أدخل قيمة اليومية للعامل " + worker.name + ":", "25000");
             if (wage && !isNaN(wage)) {
                 worker.history.push({ date: today, type: 'wage', amount: parseFloat(wage) });
-                saveData();
-                renderMainTable();
             }
         }
+        
+        saveData();
+        renderMainTable();
     }
 
     // === 3. السلف ===
@@ -353,6 +367,9 @@
         let totalRepayAndWage = 0;
 
         [...worker.history].reverse().forEach(h => {
+            // تخطي عرض سجلات الغياب في جدول السلف المالي (لأن المبلغ 0)
+            if(h.type === 'absent') return;
+
             if(h.type === 'withdraw') totalWithdraw += h.amount;
             else totalRepayAndWage += h.amount;
 
@@ -384,7 +401,7 @@
         loadWorkerHistory(); 
     }
 
-    // === 4. تبويب العمال (الجديد) ===
+    // === 4. تبويب العمال (إدارة) ===
     function renderWorkersManagement() {
         const container = document.getElementById('manageWorkersList');
         container.innerHTML = '';
@@ -398,7 +415,7 @@
             container.innerHTML += `
                 <div class="worker-list-item">
                     <span class="worker-name-click" onclick="showWorkerDetails(${index})">
-                        👤 ${worker.name}
+                       <span class="text-warning ms-2">#${index + 1}</span> 👤 ${worker.name}
                     </span>
                     <button class="btn btn-sm btn-danger" onclick="deleteWorker(${index})">
                         حذف 🗑️
@@ -408,19 +425,16 @@
         });
     }
 
-    // حذف عامل
     function deleteWorker(index) {
-        if(confirm("⚠️ تحذير: هل أنت متأكد من حذف هذا العامل؟\nسيتم حذف جميع سجلاته المالية والحضور نهائياً!")) {
+        if(confirm("⚠️ تحذير: هل أنت متأكد من حذف هذا العامل وسجلاته؟")) {
             workers.splice(index, 1);
             saveData();
             renderWorkersManagement();
-            // تحديث باقي الواجهات
             renderMainTable();
-            updateSelectMenu();
         }
     }
 
-    // عرض تفاصيل الحضور
+    // عرض تفاصيل الحضور والغياب (المعدلة)
     function showWorkerDetails(index) {
         const worker = workers[index];
         const listContainer = document.getElementById('attPresentList');
@@ -428,18 +442,22 @@
         
         listContainer.innerHTML = '';
         
-        // جلب أيام الحضور (التي فيها يومية)
-        const presentDays = worker.history.filter(h => h.type === 'wage');
+        // جلب أيام الحضور والغياب فقط
+        const days = worker.history.filter(h => h.type === 'wage' || h.type === 'absent');
         
-        if(presentDays.length === 0) {
-            listContainer.innerHTML = '<li class="list-group-item bg-transparent text-white border-0 text-center">لا يوجد سجل حضور حتى الآن</li>';
+        if(days.length === 0) {
+            listContainer.innerHTML = '<li class="list-group-item bg-transparent text-white border-0 text-center">لا يوجد سجل حتى الآن</li>';
         } else {
             // ترتيب من الأحدث
-            [...presentDays].reverse().forEach(day => {
+            [...days].reverse().forEach(day => {
+                let badge = '';
+                if(day.type === 'wage') badge = '<span class="badge bg-success">✅ حاضر</span>';
+                else badge = '<span class="badge bg-danger">❌ غائب</span>';
+
                 listContainer.innerHTML += `
                     <li class="list-group-item bg-transparent text-white border-light d-flex justify-content-between">
                         <span>📅 ${day.date}</span>
-                        <span class="badge bg-success">حاضر</span>
+                        ${badge}
                     </li>
                 `;
             });
@@ -459,7 +477,7 @@
     }
 
     function saveData() {
-        localStorage.setItem('workersApp_Glass_v2', JSON.stringify(workers));
+        localStorage.setItem('workersApp_Glass_v3', JSON.stringify(workers));
     }
 </script>
 
