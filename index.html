@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سجل العمال - النسخة الزجاجية المعدلة</title>
+    <title>سجل العمال - النسخة الكاملة</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         /* الخلفية والأنميشن الأساسي */
@@ -72,8 +72,8 @@
         }
         .nav-item { text-align: center; color: rgba(255,255,255,0.6); cursor: pointer; flex: 1; transition: 0.3s; }
         .nav-item.active { color: #fff; transform: scale(1.1); text-shadow: 0 0 10px rgba(255,255,255,0.5); }
-        .nav-icon { font-size: 1.6rem; display: block; }
-        .nav-text { font-size: 0.75rem; }
+        .nav-icon { font-size: 1.4rem; display: block; }
+        .nav-text { font-size: 0.7rem; }
 
         /* أزرار الحضور */
         .btn-check-custom {
@@ -95,6 +95,22 @@
 
         /* تخصيص القوائم المنسدلة */
         option { background-color: #333; color: white; }
+
+        /* تنسيق قائمة العمال في التبويب الجديد */
+        .worker-list-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .worker-name-click { cursor: pointer; font-weight: bold; font-size: 1.1rem; text-decoration: underline; text-underline-offset: 4px; }
+        
+        /* Modal Glass */
+        .modal-content-glass {
+            background: rgba(40, 40, 60, 0.95);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 15px;
+        }
     </style>
 </head>
 <body>
@@ -102,7 +118,7 @@
 <div class="container py-4">
 
     <div id="tab-home" class="tab-content active">
-        <h3 class="text-center mb-4 fw-bold" style="text-shadow: 0 2px 4px rgba(0,0,0,0.3);">📋 سجل الحضور والعمال</h3>
+        <h3 class="text-center mb-4 fw-bold" style="text-shadow: 0 2px 4px rgba(0,0,0,0.3);">📋 سجل الحضور</h3>
         
         <div class="glass-card p-3">
             <div class="table-responsive">
@@ -170,8 +186,14 @@
         </div>
     </div>
 
+    <div id="tab-workers" class="tab-content">
+        <h3 class="text-center mb-4 fw-bold">👷 إدارة العمال</h3>
+        <div class="glass-card p-2" id="manageWorkersList">
+            </div>
+    </div>
+
     <div id="tab-add" class="tab-content">
-        <h3 class="text-center mb-4 fw-bold">➕ إضافة عامل جديد</h3>
+        <h3 class="text-center mb-4 fw-bold">➕ إضافة عامل</h3>
         <div class="glass-card p-4">
             <div class="mb-4">
                 <label class="form-label">اسم العامل:</label>
@@ -183,14 +205,37 @@
 
 </div>
 
+<div class="modal fade" id="attendanceModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-glass">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title" id="attModalTitle">سجل الحضور</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6 class="text-success mb-2">✅ الأيام التي حضر فيها (عمل):</h6>
+                <ul class="list-group mb-3" id="attPresentList" style="max-height: 200px; overflow-y: auto;">
+                    </ul>
+                <div class="alert alert-dark p-2 text-center">
+                    <small>ملاحظة: الأيام غير المذكورة تعتبر غياب أو توقف.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <nav class="bottom-nav">
     <div class="nav-item active" onclick="switchTab('home', this)">
-        <span class="nav-icon">👷‍♂️</span>
+        <span class="nav-icon">🏠</span>
         <span class="nav-text">الرئيسية</span>
     </div>
     <div class="nav-item" onclick="switchTab('loans', this)">
         <span class="nav-icon">💰</span>
         <span class="nav-text">السلف</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('workers', this)">
+        <span class="nav-icon">👷</span>
+        <span class="nav-text">العمال</span>
     </div>
     <div class="nav-item" onclick="switchTab('add', this)">
         <span class="nav-icon">➕</span>
@@ -202,13 +247,14 @@
 <script>
     // === البيانات ===
     let workers = JSON.parse(localStorage.getItem('workersApp_Glass_v2')) || [];
+    const attendanceModal = new bootstrap.Modal(document.getElementById('attendanceModal'));
 
     window.onload = function() {
         renderMainTable();
         updateSelectMenu();
+        renderWorkersManagement();
     };
 
-    // === تنسيق العملة (الآلاف + د.ع) ===
     function formatMoney(amount) {
         return parseFloat(amount).toLocaleString('en-US') + ' د.ع';
     }
@@ -222,9 +268,10 @@
         
         if(tabName === 'home') renderMainTable();
         if(tabName === 'loans') updateSelectMenu();
+        if(tabName === 'workers') renderWorkersManagement();
     }
 
-    // === 1. إضافة عامل جديد ===
+    // === 1. إضافة عامل ===
     function addNewWorker() {
         const nameInp = document.getElementById('newWorkerName');
         const name = nameInp.value.trim();
@@ -237,39 +284,31 @@
         document.querySelector('.nav-item:first-child').click(); 
     }
 
-    // === 2. الجدول الرئيسي + منطق الحضور (✅) ===
+    // === 2. الرئيسية (الحضور) ===
     function renderMainTable() {
         const tbody = document.getElementById('mainTableBody');
         tbody.innerHTML = '';
-        
         if(workers.length > 0) document.getElementById('emptyMsg').style.display = 'none';
 
         const today = new Date().toISOString().split('T')[0];
 
         workers.forEach((worker, index) => {
             const workedToday = worker.history.some(h => h.date === today && h.type === 'wage');
-            
             let balance = calculateBalance(worker);
             let colorClass = balance >= 0 ? 'balance-pos' : 'balance-neg';
-            
             let checkIcon = workedToday ? '✅' : '⬜';
             let checkClass = workedToday ? 'btn-check-custom checked' : 'btn-check-custom';
 
             tbody.innerHTML += `
                 <tr>
                     <td class="fw-bold">${worker.name}</td>
-                    <td>
-                        <div class="${checkClass}" onclick="toggleAttendance(${index})">
-                            ${checkIcon}
-                        </div>
-                    </td>
+                    <td><div class="${checkClass}" onclick="toggleAttendance(${index})">${checkIcon}</div></td>
                     <td class="${colorClass}" style="direction:ltr">${formatMoney(balance)}</td>
                 </tr>
             `;
         });
     }
 
-    // === تسجيل الحضور السريع ===
     function toggleAttendance(index) {
         const today = new Date().toISOString().split('T')[0];
         const worker = workers[index];
@@ -284,25 +323,19 @@
         } else {
             let wage = prompt("أدخل قيمة اليومية للعامل " + worker.name + ":", "25000");
             if (wage && !isNaN(wage)) {
-                worker.history.push({
-                    date: today,
-                    type: 'wage',
-                    amount: parseFloat(wage)
-                });
+                worker.history.push({ date: today, type: 'wage', amount: parseFloat(wage) });
                 saveData();
                 renderMainTable();
             }
         }
     }
 
-    // === 3. قسم السلف ===
+    // === 3. السلف ===
     function updateSelectMenu() {
         const select = document.getElementById('workerSelect');
         const oldVal = select.value;
         select.innerHTML = '<option value="">-- اختر --</option>';
-        workers.forEach((w, i) => {
-            select.innerHTML += `<option value="${i}">${w.name}</option>`;
-        });
+        workers.forEach((w, i) => { select.innerHTML += `<option value="${i}">${w.name}</option>`; });
         select.value = oldVal;
     }
 
@@ -313,63 +346,106 @@
         const dispBal = document.getElementById('dispBalance');
 
         tbody.innerHTML = '';
-        if(index === "") {
-            dispTotal.innerText = "0 د.ع"; dispBal.innerText = "0 د.ع";
-            return;
-        }
+        if(index === "") { dispTotal.innerText = "0 د.ع"; dispBal.innerText = "0 د.ع"; return; }
 
         const worker = workers[index];
         let totalWithdraw = 0;
         let totalRepayAndWage = 0;
 
-        // عرض السجل
         [...worker.history].reverse().forEach(h => {
             if(h.type === 'withdraw') totalWithdraw += h.amount;
             else totalRepayAndWage += h.amount;
 
-            let typeText = '';
-            let color = '';
-            if(h.type === 'withdraw') { typeText = 'سلفة'; color = 'text-danger'; }
-            else if(h.type === 'repay') { typeText = 'تسديد'; color = 'text-info'; }
-            else { typeText = 'يومية'; color = 'text-success'; }
+            let typeText = h.type === 'withdraw' ? 'سلفة' : (h.type === 'repay' ? 'تسديد' : 'يومية');
+            let color = h.type === 'withdraw' ? 'text-danger' : (h.type === 'repay' ? 'text-info' : 'text-success');
 
             tbody.innerHTML += `
-                <tr>
-                    <td>${h.date}</td>
-                    <td class="${color} fw-bold">${typeText}</td>
-                    <td>${formatMoney(h.amount)}</td>
-                </tr>
+                <tr><td>${h.date}</td><td class="${color} fw-bold">${typeText}</td><td>${formatMoney(h.amount)}</td></tr>
             `;
         });
 
-        // حساب الديون المتبقية (مجموع السلف - مجموع التسديد والعمل)
-        // إذا كان الناتج موجباً يعني عليه ديون، إذا سالب يعني يطلبنا
         let currentDebt = totalWithdraw - totalRepayAndWage;
-        let displayDebt = currentDebt > 0 ? currentDebt : 0; // عرض الدين فقط إذا كان أكبر من صفر
-
-        dispTotal.innerText = formatMoney(displayDebt);
-        
-        // حساب الرصيد الصافي العام
-        let finalBal = totalRepayAndWage - totalWithdraw;
-        dispBal.innerText = formatMoney(finalBal);
+        dispTotal.innerText = formatMoney(currentDebt > 0 ? currentDebt : 0);
+        dispBal.innerText = formatMoney(totalRepayAndWage - totalWithdraw);
     }
 
     function addTransaction(type) {
         const index = document.getElementById('workerSelect').value;
         const amount = parseFloat(document.getElementById('transAmount').value);
-
         if(index === "") return alert("اختر العامل أولاً");
         if(!amount) return alert("ادخل المبلغ");
 
         workers[index].history.push({
             date: new Date().toISOString().split('T')[0],
-            type: type, 
-            amount: amount
+            type: type, amount: amount
         });
-        
         saveData();
         document.getElementById('transAmount').value = '';
         loadWorkerHistory(); 
+    }
+
+    // === 4. تبويب العمال (الجديد) ===
+    function renderWorkersManagement() {
+        const container = document.getElementById('manageWorkersList');
+        container.innerHTML = '';
+
+        if(workers.length === 0) {
+            container.innerHTML = '<div class="text-center p-3">لا يوجد عمال.</div>';
+            return;
+        }
+
+        workers.forEach((worker, index) => {
+            container.innerHTML += `
+                <div class="worker-list-item">
+                    <span class="worker-name-click" onclick="showWorkerDetails(${index})">
+                        👤 ${worker.name}
+                    </span>
+                    <button class="btn btn-sm btn-danger" onclick="deleteWorker(${index})">
+                        حذف 🗑️
+                    </button>
+                </div>
+            `;
+        });
+    }
+
+    // حذف عامل
+    function deleteWorker(index) {
+        if(confirm("⚠️ تحذير: هل أنت متأكد من حذف هذا العامل؟\nسيتم حذف جميع سجلاته المالية والحضور نهائياً!")) {
+            workers.splice(index, 1);
+            saveData();
+            renderWorkersManagement();
+            // تحديث باقي الواجهات
+            renderMainTable();
+            updateSelectMenu();
+        }
+    }
+
+    // عرض تفاصيل الحضور
+    function showWorkerDetails(index) {
+        const worker = workers[index];
+        const listContainer = document.getElementById('attPresentList');
+        document.getElementById('attModalTitle').innerText = "سجل: " + worker.name;
+        
+        listContainer.innerHTML = '';
+        
+        // جلب أيام الحضور (التي فيها يومية)
+        const presentDays = worker.history.filter(h => h.type === 'wage');
+        
+        if(presentDays.length === 0) {
+            listContainer.innerHTML = '<li class="list-group-item bg-transparent text-white border-0 text-center">لا يوجد سجل حضور حتى الآن</li>';
+        } else {
+            // ترتيب من الأحدث
+            [...presentDays].reverse().forEach(day => {
+                listContainer.innerHTML += `
+                    <li class="list-group-item bg-transparent text-white border-light d-flex justify-content-between">
+                        <span>📅 ${day.date}</span>
+                        <span class="badge bg-success">حاضر</span>
+                    </li>
+                `;
+            });
+        }
+        
+        attendanceModal.show();
     }
 
     // === أدوات ===
