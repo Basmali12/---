@@ -3,146 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سجل العمال والمقاولات</title>
+    <title>تطبيق العمال والسلف</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; }
-        .card-custom { box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-radius: 10px; border: none; margin-bottom: 20px; }
-        .balance-positive { color: green; font-weight: bold; }
-        .balance-negative { color: red; font-weight: bold; }
-        .worker-row { cursor: pointer; transition: background 0.2s; }
-        .worker-row:hover { background-color: #e9ecef; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; padding-bottom: 80px; /* مسافة للشريط السفلي */ }
+        
+        /* تنسيق البطاقات */
+        .card-custom { border: none; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); background: white; margin-bottom: 15px; }
+        
+        /* تنسيق الشريط السفلي */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: white; border-top: 1px solid #ddd;
+            display: flex; justify-content: space-around;
+            padding: 10px 0; z-index: 1000;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+        .nav-item { text-align: center; color: #6c757d; cursor: pointer; flex: 1; }
+        .nav-item.active { color: #0d6efd; font-weight: bold; }
+        .nav-icon { font-size: 1.5rem; display: block; margin-bottom: 2px; }
+        .nav-text { font-size: 0.8rem; }
+
+        /* إخفاء واظهار التبويبات */
+        .tab-content { display: none; animation: fadeIn 0.3s; }
+        .tab-content.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .balance-pos { color: green; font-weight: bold; }
+        .balance-neg { color: red; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="container py-4">
-    <h2 class="text-center mb-4">👷‍♂️ سجل العمال والمقاولات</h2>
+<div class="container py-3">
 
-    <div class="card card-custom p-3">
-        <h5>إضافة عامل جديد</h5>
-        <div class="input-group mb-3">
-            <input type="text" id="newWorkerName" class="form-control" placeholder="اكتب اسم العامل هنا...">
-            <button class="btn btn-primary" onclick="addWorker()">إضافة</button>
+    <div id="tab-home" class="tab-content active">
+        <h4 class="text-center mb-3">👷‍♂️ قائمة العمال</h4>
+        
+        <div class="card card-custom p-3">
+            <div class="table-responsive">
+                <table class="table table-bordered text-center align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>الاسم</th>
+                            <th>صافي الحساب</th>
+                            <th>إجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mainTableBody">
+                        </tbody>
+                </table>
+            </div>
+            <div class="text-center mt-3 text-muted" id="emptyMsg">
+                <small>لا يوجد عمال.. انتقل لتبويب "إضافة" للبدء</small>
+            </div>
         </div>
     </div>
 
-    <div class="card card-custom p-3">
-        <h5>قائمة العمال واليوميات</h5>
-        <div class="table-responsive">
-            <table class="table table-bordered text-center">
-                <thead class="table-dark">
-                    <tr>
-                        <th>الاسم</th>
-                        <th>مجموع العمل (لك)</th>
-                        <th>مجموع السلف (عليك)</th>
-                        <th>الصافي (الباقي)</th>
-                        <th>إجراءات</th>
-                    </tr>
-                </thead>
-                <tbody id="workersTableBody">
-                    </tbody>
+    <div id="tab-loans" class="tab-content">
+        <h4 class="text-center mb-3 text-danger">💰 إدارة السلف</h4>
+        
+        <div class="card card-custom p-3">
+            <label class="form-label fw-bold">اختر العامل:</label>
+            <select id="workerSelect" class="form-select mb-3" onchange="loadWorkerHistory()">
+                <option value="">-- اختر --</option>
+            </select>
+
+            <div class="row text-center mb-3">
+                <div class="col-6">
+                    <div class="p-2 bg-light rounded">
+                        <small>مجموع السلف</small>
+                        <div id="dispTotalWithdraw" class="text-danger fw-bold">0</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-2 bg-light rounded">
+                        <small>الباقي له</small>
+                        <div id="dispBalance" class="fw-bold">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+            <h6>تسجيل حركة جديدة:</h6>
+            <div class="input-group mb-2">
+                <span class="input-group-text">المبلغ</span>
+                <input type="number" id="transAmount" class="form-control">
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-danger flex-grow-1" onclick="addTransaction('withdraw')">إعطاء سلفة 📤</button>
+                <button class="btn btn-success flex-grow-1" onclick="addTransaction('wage')">تسجيل يومية 📥</button>
+            </div>
+        </div>
+
+        <h6 class="mt-3">سجل الحركات:</h6>
+        <div class="card card-custom p-2">
+            <table class="table table-sm table-striped text-center mb-0" style="font-size: 0.9rem;">
+                <thead><tr><th>التاريخ</th><th>الحركة</th><th>المبلغ</th></tr></thead>
+                <tbody id="historyTableBody"></tbody>
             </table>
         </div>
     </div>
-</div>
 
-<div class="modal fade" id="transactionModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">تسجيل يومية / سلفة</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div id="tab-add" class="tab-content">
+        <h4 class="text-center mb-3">➕ إضافة عامل جديد</h4>
+        <div class="card card-custom p-4">
+            <div class="mb-3">
+                <label class="form-label">اسم العامل الكامل:</label>
+                <input type="text" id="newWorkerName" class="form-control form-control-lg">
             </div>
-            <div class="modal-body">
-                <h6 id="modalWorkerName" class="text-primary mb-3"></h6>
-                <input type="hidden" id="selectedWorkerIndex">
-                
-                <div class="mb-3">
-                    <label class="form-label">التاريخ:</label>
-                    <input type="date" id="transDate" class="form-control">
-                </div>
-                
-                <div class="mb-3">
-                    <label class="form-label">هل حضر للعمل؟ (✅)</label>
-                    <select class="form-select" id="transStatus" onchange="toggleWageInput()">
-                        <option value="present">نعم (حاضر)</option>
-                        <option value="absent">لا (غائب)</option>
-                    </select>
-                </div>
-
-                <div class="mb-3" id="wageDiv">
-                    <label class="form-label">قيمة اليومية (المبلغ المستحق له):</label>
-                    <input type="number" id="transWage" class="form-control" placeholder="مثلاً: 25000">
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">سحب سلفة (المبلغ المسحوب):</label>
-                    <input type="number" id="transWithdraw" class="form-control" placeholder="مثلاً: 5000">
-                    <small class="text-muted">اتركه فارغاً أو 0 إذا لم يسحب شيئاً.</small>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
-                <button type="button" class="btn btn-success" onclick="saveTransaction()">حفظ السجل</button>
-            </div>
+            <button class="btn btn-primary w-100 btn-lg" onclick="addNewWorker()">حفظ العامل</button>
+        </div>
+        <div class="alert alert-info mt-3">
+            <small>💡 بعد إضافة العامل، انتقل لقسم "السلف" لتسجيل يومياته أو مسحوباته.</small>
         </div>
     </div>
+
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    // 1. تعريف المتغيرات واسترجاع البيانات المحفوظة
-    let workers = JSON.parse(localStorage.getItem('workersData')) || [];
-    const transactionModal = new bootstrap.Modal(document.getElementById('transactionModal'));
+<nav class="bottom-nav">
+    <div class="nav-item active" onclick="switchTab('home', this)">
+        <span class="nav-icon">👷‍♂️</span>
+        <span class="nav-text">العمال</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('loans', this)">
+        <span class="nav-icon">💰</span>
+        <span class="nav-text">السلف</span>
+    </div>
+    <div class="nav-item" onclick="switchTab('add', this)">
+        <span class="nav-icon">➕</span>
+        <span class="nav-text">إضافة</span>
+    </div>
+</nav>
 
-    // دالة تعمل عند فتح الصفحة
+<script>
+    // === البيانات ===
+    let workers = JSON.parse(localStorage.getItem('workersApp_Tabs')) || [];
+
+    // === عند التحميل ===
     window.onload = function() {
-        renderTable();
-        document.getElementById('transDate').valueAsDate = new Date();
+        renderMainTable();
+        updateSelectMenu();
     };
 
-    // 2. إضافة عامل جديد
-    function addWorker() {
-        const nameInput = document.getElementById('newWorkerName');
-        const name = nameInput.value.trim();
+    // === 1. التنقل بين التبويبات ===
+    function switchTab(tabName, navElement) {
+        // إخفاء كل التبويبات
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        // إظهار التبويب المطلوب
+        document.getElementById('tab-' + tabName).classList.add('active');
+
+        // تحديث ألوان الأزرار السفلية
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        navElement.classList.add('active');
         
-        if (name) {
-            workers.push({
-                name: name,
-                totalWage: 0,      // مجموع ما اشتغله
-                totalWithdraw: 0,  // مجموع ما سحبه
-                history: []        // سجل الأيام
-            });
-            saveData();
-            nameInput.value = '';
-            renderTable();
-        } else {
-            alert('يرجى كتابة اسم العامل');
-        }
+        // تحديث البيانات عند التنقل
+        if(tabName === 'home') renderMainTable();
+        if(tabName === 'loans') updateSelectMenu();
     }
 
-    // 3. عرض الجدول
-    function renderTable() {
-        const tbody = document.getElementById('workersTableBody');
+    // === 2. إضافة عامل جديد (تبويب إضافة) ===
+    function addNewWorker() {
+        const nameInp = document.getElementById('newWorkerName');
+        const name = nameInp.value.trim();
+        if(!name) return alert("اكتب الاسم!");
+
+        workers.push({ name: name, history: [] });
+        saveData();
+        nameInp.value = '';
+        alert("تمت الإضافة بنجاح ✅");
+        
+        // الانتقال تلقائياً للرئيسية
+        document.querySelector('.nav-item:first-child').click(); 
+    }
+
+    // === 3. عرض الجدول الرئيسي (تبويب العمال) ===
+    function renderMainTable() {
+        const tbody = document.getElementById('mainTableBody');
         tbody.innerHTML = '';
+        
+        if(workers.length > 0) document.getElementById('emptyMsg').style.display = 'none';
 
         workers.forEach((worker, index) => {
-            const balance = worker.totalWage - worker.totalWithdraw;
-            const balanceClass = balance >= 0 ? 'balance-positive' : 'balance-negative';
-
+            let balance = calculateBalance(worker);
+            let colorClass = balance >= 0 ? 'balance-pos' : 'balance-neg'; // أخضر أو أحمر
+            
             tbody.innerHTML += `
-                <tr class="worker-row">
-                    <td class="fw-bold">${worker.name}</td>
-                    <td>${worker.totalWage.toLocaleString()}</td>
-                    <td>${worker.totalWithdraw.toLocaleString()}</td>
-                    <td class="${balanceClass}">${balance.toLocaleString()}</td>
+                <tr>
+                    <td>${worker.name}</td>
+                    <td class="${colorClass}" style="direction:ltr">${balance.toLocaleString()}</td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary" onclick="openModal(${index})">
-                             تسجيل يومية 📝
-                        </button>
-                        <button class="btn btn-sm btn-outline-info" onclick="showDetails(${index})">
-                             التفاصيل 👁️
+                        <button class="btn btn-sm btn-outline-secondary" onclick="goToLoans(${index})">
+                            كشف 📄
                         </button>
                     </td>
                 </tr>
@@ -150,67 +203,97 @@
         });
     }
 
-    // 4. فتح نافذة التسجيل
-    function openModal(index) {
-        document.getElementById('selectedWorkerIndex').value = index;
-        document.getElementById('modalWorkerName').innerText = "العامل: " + workers[index].name;
-        document.getElementById('transWage').value = '';
-        document.getElementById('transWithdraw').value = '';
-        document.getElementById('transStatus').value = 'present';
-        toggleWageInput();
-        transactionModal.show();
+    // === 4. قسم السلف (تبويب السلف) ===
+    function updateSelectMenu() {
+        const select = document.getElementById('workerSelect');
+        const oldVal = select.value;
+        select.innerHTML = '<option value="">-- اختر --</option>';
+        workers.forEach((w, i) => {
+            select.innerHTML += `<option value="${i}">${w.name}</option>`;
+        });
+        select.value = oldVal;
     }
 
-    // التحكم في ظهور حقل الأجرة (إذا كان غائباً لا توجد أجرة)
-    function toggleWageInput() {
-        const status = document.getElementById('transStatus').value;
-        const wageDiv = document.getElementById('wageDiv');
-        if(status === 'absent') {
-            wageDiv.style.display = 'none';
-            document.getElementById('transWage').value = 0;
-        } else {
-            wageDiv.style.display = 'block';
-        }
-    }
-
-    // 5. حفظ العملية (الحضور والسلف)
-    function saveTransaction() {
-        const index = document.getElementById('selectedWorkerIndex').value;
-        const date = document.getElementById('transDate').value;
-        const status = document.getElementById('transStatus').value; // present or absent
-        const wage = parseFloat(document.getElementById('transWage').value) || 0;
-        const withdraw = parseFloat(document.getElementById('transWithdraw').value) || 0;
-
-        // تحديث بيانات العامل
-        workers[index].totalWage += wage;
-        workers[index].totalWithdraw += withdraw;
+    // دالة مساعدة للانتقال من زر "كشف" في الرئيسية إلى قسم السلف مباشرة
+    function goToLoans(index) {
+        // محاكاة الضغط على تبويب السلف
+        const loansTabBtn = document.querySelectorAll('.nav-item')[1]; 
+        switchTab('loans', loansTabBtn);
         
-        // إضافة للسجل
+        // اختيار العامل وتحديث بياناته
+        const select = document.getElementById('workerSelect');
+        select.value = index;
+        loadWorkerHistory();
+    }
+
+    function loadWorkerHistory() {
+        const index = document.getElementById('workerSelect').value;
+        const tbody = document.getElementById('historyTableBody');
+        const dispTotal = document.getElementById('dispTotalWithdraw');
+        const dispBal = document.getElementById('dispBalance');
+
+        tbody.innerHTML = '';
+        if(index === "") {
+            dispTotal.innerText = "0"; dispBal.innerText = "0";
+            return;
+        }
+
+        const worker = workers[index];
+        let totalWithdraw = 0;
+        let totalWage = 0;
+
+        // عرض السجل
+        [...worker.history].reverse().forEach(h => {
+            if(h.type === 'withdraw') totalWithdraw += h.amount;
+            else totalWage += h.amount;
+
+            let typeText = h.type === 'withdraw' ? '<span class="badge bg-danger">سلفة</span>' : '<span class="badge bg-success">يومية</span>';
+            
+            tbody.innerHTML += `
+                <tr>
+                    <td>${h.date}</td>
+                    <td>${typeText}</td>
+                    <td>${h.amount.toLocaleString()}</td>
+                </tr>
+            `;
+        });
+
+        dispTotal.innerText = totalWithdraw.toLocaleString();
+        let finalBal = totalWage - totalWithdraw;
+        dispBal.innerText = finalBal.toLocaleString();
+        dispBal.className = finalBal >= 0 ? 'fw-bold text-success' : 'fw-bold text-danger';
+    }
+
+    function addTransaction(type) {
+        const index = document.getElementById('workerSelect').value;
+        const amount = parseFloat(document.getElementById('transAmount').value);
+
+        if(index === "") return alert("اختر العامل أولاً");
+        if(!amount) return alert("ادخل المبلغ");
+
         workers[index].history.push({
-            date: date,
-            status: status,
-            wage: wage,
-            withdraw: withdraw
+            date: new Date().toISOString().split('T')[0],
+            type: type, // 'wage' or 'withdraw'
+            amount: amount
         });
-
+        
         saveData();
-        transactionModal.hide();
-        renderTable();
+        document.getElementById('transAmount').value = '';
+        loadWorkerHistory(); // تحديث الجدول فوراً
     }
 
-    // 6. عرض التفاصيل (سجل الأيام) - بسيط للعرض
-    function showDetails(index) {
-        let log = `سجل: ${workers[index].name}\n----------------\n`;
-        workers[index].history.forEach(record => {
-            const statusText = record.status === 'present' ? '✅ حاضر' : '❌ غائب';
-            log += `التاريخ: ${record.date}\nالحالة: ${statusText}\nالأجرة: ${record.wage}\nالسلفة: ${record.withdraw}\n----------------\n`;
+    // === أدوات مساعدة ===
+    function calculateBalance(worker) {
+        let w = 0, wd = 0;
+        worker.history.forEach(h => {
+            if(h.type === 'wage') w += h.amount;
+            if(h.type === 'withdraw') wd += h.amount;
         });
-        alert(log); // يمكن تطوير هذا ليكون صفحة منفصلة لاحقاً
+        return w - wd;
     }
 
-    // 7. حفظ البيانات في المتصفح
     function saveData() {
-        localStorage.setItem('workersData', JSON.stringify(workers));
+        localStorage.setItem('workersApp_Tabs', JSON.stringify(workers));
     }
 </script>
 
