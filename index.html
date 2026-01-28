@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سجل العمال - النسخة المعدلة</title>
+    <title>سجل العمال - النسخة النهائية</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         /* الخلفية والأنميشن الأساسي */
@@ -90,8 +90,8 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        .balance-pos { color: #76ff03; font-weight: bold; text-shadow: 0 0 5px rgba(0,0,0,0.5); }
-        .balance-neg { color: #ff5252; font-weight: bold; text-shadow: 0 0 5px rgba(0,0,0,0.5); }
+        .balance-pos { color: #76ff03; font-weight: bold; text-shadow: 0 0 5px rgba(0,0,0,0.5); } /* أخضر = يطلبنا */
+        .balance-neg { color: #ff5252; font-weight: bold; text-shadow: 0 0 5px rgba(0,0,0,0.5); } /* أحمر = عليه دين */
 
         /* تخصيص القوائم المنسدلة */
         option { background-color: #333; color: white; }
@@ -120,14 +120,20 @@
     <div id="tab-home" class="tab-content active">
         <h3 class="text-center mb-4 fw-bold" style="text-shadow: 0 2px 4px rgba(0,0,0,0.3);">📋 سجل الحضور</h3>
         
+        <div class="glass-card p-3 text-center mb-3">
+            <h6 class="mb-2 text-white-50">إجمالي الديون (المطلوب من العمال)</h6>
+            <h2 id="grandTotalDisplay" class="fw-bold m-0 text-white">0 د.ع</h2>
+        </div>
+
         <div class="glass-card p-3">
             <div class="table-responsive">
                 <table class="table table-glass text-center mb-0">
                     <thead>
                         <tr>
-                            <th width="10%">#</th> <th width="40%">الاسم</th>
+                            <th width="10%">#</th>
+                            <th width="40%">الاسم</th>
                             <th width="20%">حضور</th>
-                            <th width="30%">الباقي له</th>
+                            <th width="30%">الصافي (عليه)</th>
                         </tr>
                     </thead>
                     <tbody id="mainTableBody">
@@ -149,19 +155,9 @@
                 <option value="">-- اختر من القائمة --</option>
             </select>
 
-            <div class="row text-center mb-3 g-2">
-                <div class="col-6">
-                    <div class="p-2" style="background: rgba(255,0,0,0.2); border-radius: 10px;">
-                        <small>باقي السلف (عليه)</small>
-                        <div id="dispTotalWithdraw" class="fw-bold text-white">0 د.ع</div>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="p-2" style="background: rgba(0,255,0,0.2); border-radius: 10px;">
-                        <small>الصافي (الباقي)</small>
-                        <div id="dispBalance" class="fw-bold text-white">0 د.ع</div>
-                    </div>
-                </div>
+            <div class="glass-card p-3 text-center mb-3" style="background: rgba(0,0,0,0.2);">
+                <small class="text-light">الرصيد الصافي (المتبقي عليه)</small>
+                <h2 id="dispBalance" class="fw-bold mt-2">0 د.ع</h2>
             </div>
 
             <hr style="border-color: rgba(255,255,255,0.3)">
@@ -171,10 +167,10 @@
                 <input type="number" id="transAmount" class="form-control glass-input" placeholder="المبلغ بالدينار...">
             </div>
             <div class="d-flex gap-2 mb-2">
-                <button class="btn btn-danger flex-grow-1" style="backdrop-filter: blur(5px);" onclick="addTransaction('withdraw')">سحب سلفة 📤</button>
-                <button class="btn btn-info flex-grow-1" style="backdrop-filter: blur(5px); color:white;" onclick="addTransaction('repay')">تسديد سلفة 💵</button>
+                <button class="btn btn-danger flex-grow-1" style="backdrop-filter: blur(5px);" onclick="addTransaction('withdraw')">سحب سلفة (+)</button>
+                <button class="btn btn-info flex-grow-1" style="backdrop-filter: blur(5px); color:white;" onclick="addTransaction('repay')">تسديد (-)</button>
             </div>
-            <button class="btn btn-success w-100" style="backdrop-filter: blur(5px);" onclick="addTransaction('wage')">تنزيل يومية عمل 🔨</button>
+            <button class="btn btn-success w-100" style="backdrop-filter: blur(5px);" onclick="addTransaction('wage')">تنزيل يومية عمل (ينقص من الدين)</button>
         </div>
 
         <h6 class="mt-3 px-2">آخر الحركات:</h6>
@@ -242,7 +238,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // === البيانات ===
-    let workers = JSON.parse(localStorage.getItem('workersApp_Glass_v3')) || [];
+    let workers = JSON.parse(localStorage.getItem('workersApp_Glass_v4')) || [];
     const attendanceModal = new bootstrap.Modal(document.getElementById('attendanceModal'));
 
     window.onload = function() {
@@ -287,53 +283,59 @@
         if(workers.length > 0) document.getElementById('emptyMsg').style.display = 'none';
 
         const today = new Date().toISOString().split('T')[0];
+        let grandTotal = 0; // متغير لحساب المجموع الكلي
 
         workers.forEach((worker, index) => {
-            // فحص حالة اليوم: هل هو حضور (wage) أو غياب (absent)
             const todayRecord = worker.history.find(h => h.date === today && (h.type === 'wage' || h.type === 'absent'));
             const isPresent = todayRecord && todayRecord.type === 'wage';
             
+            // حساب الرصيد
             let balance = calculateBalance(worker);
-            let colorClass = balance >= 0 ? 'balance-pos' : 'balance-neg';
+            grandTotal += balance; // إضافة الرصيد للمجموع الكلي
+
+            // المنطق: إذا الرصيد موجب (عليه دين) يكون أحمر، إذا سالب (يطلبنا) يكون أخضر
+            let colorClass = balance > 0 ? 'balance-neg' : 'balance-pos';
             
-            // إذا كان حاضر = صح ملونة، إذا لا (غياب أو لم يحدد) = فارغ
             let checkIcon = isPresent ? '✅' : '⬜';
             let checkClass = isPresent ? 'btn-check-custom checked' : 'btn-check-custom';
 
             tbody.innerHTML += `
                 <tr>
-                    <td>${index + 1}</td> <td class="fw-bold">${worker.name}</td>
+                    <td>${index + 1}</td>
+                    <td class="fw-bold">${worker.name}</td>
                     <td><div class="${checkClass}" onclick="toggleAttendance(${index})">${checkIcon}</div></td>
                     <td class="${colorClass}" style="direction:ltr">${formatMoney(balance)}</td>
                 </tr>
             `;
         });
+
+        // عرض الرصيد الكلي في الأعلى
+        const grandTotalEl = document.getElementById('grandTotalDisplay');
+        grandTotalEl.innerText = formatMoney(grandTotal);
+        // تلوين المجموع الكلي
+        if(grandTotal > 0) { grandTotalEl.className = "fw-bold m-0 balance-neg"; }
+        else { grandTotalEl.className = "fw-bold m-0 balance-pos"; }
     }
 
-    // دالة تبديل الحضور (صح = حضور، إزالة الصح = غياب)
+    // دالة تبديل الحضور
     function toggleAttendance(index) {
         const today = new Date().toISOString().split('T')[0];
         const worker = workers[index];
         
-        // البحث عن أي سجل مسجل اليوم (سواء حضور أو غياب) وحذفه أولاً
         const existingRecordIndex = worker.history.findIndex(h => h.date === today && (h.type === 'wage' || h.type === 'absent'));
         const wasPresent = existingRecordIndex !== -1 && worker.history[existingRecordIndex].type === 'wage';
 
-        // حذف السجل القديم لهذا اليوم (لإعادة الكتابة)
         if (existingRecordIndex !== -1) {
             worker.history.splice(existingRecordIndex, 1);
         }
 
         if (wasPresent) {
-            // إذا كان حاضر وضغطنا، يتحول إلى غياب (بدون علامة صح)
             if(confirm("تحويل الحالة إلى غياب؟")) {
                 worker.history.push({ date: today, type: 'absent', amount: 0 });
             } else {
-                // إلغاء العملية، إعادة الحضور
-                worker.history.push({ date: today, type: 'wage', amount: 25000 }); // قيمة افتراضية للاسترجاع
+                worker.history.push({ date: today, type: 'wage', amount: 25000 });
             }
         } else {
-            // إذا كان غائب (أو غير مسجل) وضغطنا، يتحول إلى حضور
             let wage = prompt("أدخل قيمة اليومية للعامل " + worker.name + ":", "25000");
             if (wage && !isNaN(wage)) {
                 worker.history.push({ date: today, type: 'wage', amount: parseFloat(wage) });
@@ -356,34 +358,36 @@
     function loadWorkerHistory() {
         const index = document.getElementById('workerSelect').value;
         const tbody = document.getElementById('historyTableBody');
-        const dispTotal = document.getElementById('dispTotalWithdraw');
         const dispBal = document.getElementById('dispBalance');
 
         tbody.innerHTML = '';
-        if(index === "") { dispTotal.innerText = "0 د.ع"; dispBal.innerText = "0 د.ع"; return; }
+        if(index === "") { dispBal.innerText = "0 د.ع"; return; }
 
         const worker = workers[index];
         let totalWithdraw = 0;
         let totalRepayAndWage = 0;
 
         [...worker.history].reverse().forEach(h => {
-            // تخطي عرض سجلات الغياب في جدول السلف المالي (لأن المبلغ 0)
             if(h.type === 'absent') return;
 
             if(h.type === 'withdraw') totalWithdraw += h.amount;
             else totalRepayAndWage += h.amount;
 
             let typeText = h.type === 'withdraw' ? 'سلفة' : (h.type === 'repay' ? 'تسديد' : 'يومية');
-            let color = h.type === 'withdraw' ? 'text-danger' : (h.type === 'repay' ? 'text-info' : 'text-success');
+            let color = h.type === 'withdraw' ? 'text-danger' : 'text-success';
 
             tbody.innerHTML += `
                 <tr><td>${h.date}</td><td class="${color} fw-bold">${typeText}</td><td>${formatMoney(h.amount)}</td></tr>
             `;
         });
 
-        let currentDebt = totalWithdraw - totalRepayAndWage;
-        dispTotal.innerText = formatMoney(currentDebt > 0 ? currentDebt : 0);
-        dispBal.innerText = formatMoney(totalRepayAndWage - totalWithdraw);
+        // التعديل الثاني: المعادلة (السلف - العمل)
+        // إذا كان الناتج موجب = عليه دين
+        let finalBal = totalWithdraw - totalRepayAndWage;
+        
+        dispBal.innerText = formatMoney(finalBal);
+        if(finalBal > 0) dispBal.className = "fw-bold mt-2 balance-neg"; // أحمر
+        else dispBal.className = "fw-bold mt-2 balance-pos"; // أخضر
     }
 
     function addTransaction(type) {
@@ -434,7 +438,6 @@
         }
     }
 
-    // عرض تفاصيل الحضور والغياب (المعدلة)
     function showWorkerDetails(index) {
         const worker = workers[index];
         const listContainer = document.getElementById('attPresentList');
@@ -442,13 +445,11 @@
         
         listContainer.innerHTML = '';
         
-        // جلب أيام الحضور والغياب فقط
         const days = worker.history.filter(h => h.type === 'wage' || h.type === 'absent');
         
         if(days.length === 0) {
             listContainer.innerHTML = '<li class="list-group-item bg-transparent text-white border-0 text-center">لا يوجد سجل حتى الآن</li>';
         } else {
-            // ترتيب من الأحدث
             [...days].reverse().forEach(day => {
                 let badge = '';
                 if(day.type === 'wage') badge = '<span class="badge bg-success">✅ حاضر</span>';
@@ -467,17 +468,18 @@
     }
 
     // === أدوات ===
+    // التعديل الثاني (المعادلة العامة): الرصيد = السلف - العمل
     function calculateBalance(worker) {
         let credit = 0, debit = 0;
         worker.history.forEach(h => {
             if(h.type === 'wage' || h.type === 'repay') credit += h.amount;
             if(h.type === 'withdraw') debit += h.amount;
         });
-        return credit - debit;
+        return debit - credit; // السحب (عليه) - العمل (له)
     }
 
     function saveData() {
-        localStorage.setItem('workersApp_Glass_v3', JSON.stringify(workers));
+        localStorage.setItem('workersApp_Glass_v4', JSON.stringify(workers));
     }
 </script>
 
