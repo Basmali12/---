@@ -86,8 +86,12 @@
 
         /* عناصر القائمة */
         .worker-list-item {
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex; flex-direction: column; 
             padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);
+            gap: 10px;
+        }
+        .worker-actions {
+            display: flex; gap: 5px; justify-content: flex-end; width: 100%;
         }
         .worker-name-click { cursor: pointer; font-weight: bold; font-size: 1.1rem; }
 
@@ -227,10 +231,16 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content modal-content-glass">
             <div class="modal-header border-bottom-0">
-                <h5 class="modal-title">تواريخ العمل</h5>
+                <h5 class="modal-title">تفاصيل الرصيد والحضور</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
+                <div class="text-center mb-3 p-2" style="background: rgba(255,255,255,0.1); border-radius: 10px;">
+                    <small class="text-white-50">مجموع الرصيد (من العمل)</small>
+                    <h2 id="detailsTotalBalance" class="fw-bold text-success m-0">0 د.ع</h2>
+                </div>
+                
+                <h6 class="mb-2">تواريخ الحضور:</h6>
                 <ul class="list-group" id="workDatesList" style="max-height: 300px; overflow-y: auto;"></ul>
             </div>
         </div>
@@ -260,7 +270,7 @@
 <script>
     // === البيانات ===
     // history types: 'wage' (حضور), 'loan' (سلفة)
-    let workers = JSON.parse(localStorage.getItem('workersApp_Mod_v2')) || [];
+    let workers = JSON.parse(localStorage.getItem('workersApp_Mod_v3')) || [];
     let notes = JSON.parse(localStorage.getItem('notesApp_v1')) || [];
     
     // متغيرات مؤقتة
@@ -284,7 +294,7 @@
     }
 
     function saveData() {
-        localStorage.setItem('workersApp_Mod_v2', JSON.stringify(workers));
+        localStorage.setItem('workersApp_Mod_v3', JSON.stringify(workers));
         localStorage.setItem('notesApp_v1', JSON.stringify(notes));
     }
 
@@ -334,7 +344,6 @@
         
         const workerName = workers[index].name;
         
-        // منع التكرار
         if(!tempAttendanceList.includes(index)) {
             tempAttendanceList.push(index);
             const display = document.getElementById('tempWorkersDisplay');
@@ -350,7 +359,6 @@
 
         tempAttendanceList.forEach(index => {
             let worker = workers[index];
-            // إضافة سجل حضور (wage)
             worker.history.push({
                 date: date,
                 type: 'wage',
@@ -368,14 +376,10 @@
     function renderMainTable() {
         const tbody = document.getElementById('mainTableBody');
         tbody.innerHTML = '';
-        
         let grandTotal = 0;
 
         workers.forEach((worker, index) => {
-            // حسابات
             let totalWages = 0;
-            // let totalLoans = 0; // تم إيقاف تأثير السلف على الرئيسية
-
             let daysCount = 0;
 
             worker.history.forEach(h => {
@@ -383,14 +387,10 @@
                     totalWages += h.amount;
                     daysCount++;
                 } 
-                // تم تجاهل السلف هنا
             });
 
-            // الرصيد في الرئيسية = مجموع اليوميات فقط (الأرباح)
             let netBalance = totalWages;
             grandTotal += netBalance;
-
-            // دائماً إيجابي لأنه يوميات فقط
             let colorClass = 'balance-pos'; 
             
             tbody.innerHTML += `
@@ -408,19 +408,22 @@
         totalEl.className = "fw-bold m-0 balance-pos";
     }
 
+    // تم تعديل هذه الدالة لحساب المجموع وعرضه في النافذة
     function showWorkDetails(index) {
         const list = document.getElementById('workDatesList');
+        const totalDisplay = document.getElementById('detailsTotalBalance');
         list.innerHTML = '';
-        const worker = workers[index];
         
-        // تصفية تواريخ العمل فقط
+        const worker = workers[index];
         const workDays = worker.history.filter(h => h.type === 'wage');
         
+        let totalWages = 0;
+
         if(workDays.length === 0) {
             list.innerHTML = '<li class="list-group-item bg-transparent text-white text-center">لا يوجد أيام عمل مسجلة</li>';
         } else {
-            // ترتيب تنازلي
             [...workDays].reverse().forEach(d => {
+                totalWages += d.amount;
                 list.innerHTML += `
                     <li class="list-group-item bg-transparent text-white border-light d-flex justify-content-between">
                         <span>📅 ${d.date}</span>
@@ -428,6 +431,8 @@
                     </li>`;
             });
         }
+        
+        totalDisplay.innerText = formatMoney(totalWages); // عرض المجموع
         detailsModal.show();
     }
 
@@ -441,7 +446,7 @@
             text: txt,
             date: new Date().toLocaleDateString('ar-EG')
         };
-        notes.unshift(noteObj); // إضافة في البداية
+        notes.unshift(noteObj);
         saveData();
         document.getElementById('noteText').value = '';
         renderNotes();
@@ -476,7 +481,7 @@
         }
     }
 
-    // === 4. إدارة العمال والسلف (النافذة والزر) ===
+    // === 4. إدارة العمال والسلف (النافذة والأزرار) ===
     function renderWorkersManagement() {
         const container = document.getElementById('manageWorkersList');
         container.innerHTML = '';
@@ -490,8 +495,9 @@
             container.innerHTML += `
                 <div class="worker-list-item">
                     <span class="fw-bold">👤 ${worker.name}</span>
-                    <div>
-                        <button class="btn btn-sm btn-warning ms-1" onclick="openLoanModal(${index})">السلفة 💰</button>
+                    <div class="worker-actions">
+                        <button class="btn btn-sm btn-info text-white" onclick="showWorkDetails(${index})">التفاصيل 📄</button>
+                        <button class="btn btn-sm btn-warning" onclick="openLoanModal(${index})">السلفة 💰</button>
                         <button class="btn btn-sm btn-danger" onclick="deleteWorker(${index})">حذف 🗑️</button>
                     </div>
                 </div>
@@ -514,8 +520,8 @@
         currentLoanWorkerIndex = index;
         const worker = workers[index];
         document.getElementById('loanWorkerName').innerText = worker.name;
-        document.getElementById('loanDate').valueAsDate = new Date(); // reset date
-        document.getElementById('loanAmount').value = ''; // reset amount
+        document.getElementById('loanDate').valueAsDate = new Date();
+        document.getElementById('loanAmount').value = '';
         
         renderLoanData();
         loanModal.show();
@@ -531,7 +537,6 @@
 
         [...loans].reverse().forEach(l => {
             totalLoans += l.amount;
-            // تم جعل اللون أبيض بالكامل داخل القائمة
             tbody.innerHTML += `
                 <tr class="text-white">
                     <td>${l.date}</td>
@@ -546,28 +551,19 @@
     function saveLoan() {
         const amount = parseFloat(document.getElementById('loanAmount').value);
         const date = document.getElementById('loanDate').value;
-        
         if(!amount || !date) return alert("الرجاء إدخال التاريخ والمبلغ");
 
-        workers[currentLoanWorkerIndex].history.push({
-            date: date,
-            type: 'loan',
-            amount: amount
-        });
-        
+        workers[currentLoanWorkerIndex].history.push({ date: date, type: 'loan', amount: amount });
         saveData();
         document.getElementById('loanAmount').value = '';
         renderLoanData();
-        renderMainTable(); // لتحديث الرصيد في الخلفية
     }
 
     function resetLoans() {
-        if(confirm("هل أنت متأكد من تصفير جميع السلف لهذا العامل؟ (سيتم حذف سجل السلف فقط)")) {
-            // حذف كل العناصر التي نوعها 'loan' من سجل العامل
+        if(confirm("هل أنت متأكد من تصفير جميع السلف لهذا العامل؟")) {
             workers[currentLoanWorkerIndex].history = workers[currentLoanWorkerIndex].history.filter(h => h.type !== 'loan');
             saveData();
             renderLoanData();
-            renderMainTable();
         }
     }
 
