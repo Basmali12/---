@@ -15,6 +15,13 @@ body {
     100% { background-position: 0% 50%; }
 }
 
+/* تعديل ألوان العناوين لتكون بارزة (أحمر) حسب الطلب */
+h3, h4, h5, h6, .modal-title {
+    color: #ff3d3d !important; /* لون أحمر بارز */
+    text-shadow: 1px 1px 2px black;
+    font-weight: 900 !important; /* خط عريض جداً */
+}
+
 /* التصميم الزجاجي */
 .glass-card {
     background: rgba(255, 255, 255, 0.15);
@@ -71,8 +78,8 @@ body {
 .tab-content.active { display: block; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-.balance-pos { color: #76ff03; font-weight: bold; } /* يطلبنا */
-.balance-neg { color: #ff5252; font-weight: bold; } /* عليه دين */
+.balance-pos { color: #76ff03; font-weight: bold; } 
+.balance-neg { color: #ff5252; font-weight: bold; } 
 
 option { background-color: #333; color: white; }
 
@@ -96,7 +103,6 @@ option { background-color: #333; color: white; }
     border-radius: 15px;
 }
 
-/* تنسيق خاص لقائمة اختيار العمال للحضور */
 .selected-workers-list span {
     display: inline-block;
     background: rgba(255,255,255,0.2);
@@ -106,7 +112,6 @@ option { background-color: #333; color: white; }
     font-size: 0.9rem;
 }
 
-/* تنسيق أيقونة التعديل في القائمة */
 .edit-icon {
     cursor: pointer;
     background: rgba(255,255,255,0.2);
