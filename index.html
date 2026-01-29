@@ -5,115 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>سجل العمال - النسخة المعدلة</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        /* الخلفية والأنميشن الأساسي */
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(45deg, #1a2a6c, #b21f1f, #fdbb2d);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
-            min-height: 100vh;
-            padding-bottom: 90px;
-            color: #fff;
-        }
-
-        @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        /* التصميم الزجاجي */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            margin-bottom: 15px;
-            color: white;
-            transition: transform 0.2s;
-        }
-        
-        .glass-input, .glass-select, textarea {
-            background: rgba(255, 255, 255, 0.2) !important;
-            border: 1px solid rgba(255, 255, 255, 0.3) !important;
-            color: #fff !important;
-        }
-        
-        .glass-input::placeholder, textarea::placeholder { color: rgba(255, 255, 255, 0.7); }
-        .glass-input:focus, textarea:focus {
-            background: rgba(255, 255, 255, 0.3) !important;
-            box-shadow: 0 0 10px rgba(255,255,255,0.2);
-        }
-
-        /* تخصيص الجدول */
-        .table-glass {
-            color: white;
-            border-color: rgba(255,255,255,0.2);
-        }
-        .table-glass th, .table-glass td {
-            background: transparent;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            vertical-align: middle;
-        }
-
-        /* الشريط السفلي */
-        .bottom-nav {
-            position: fixed; bottom: 15px; left: 15px; right: 15px;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            display: flex; justify-content: space-around;
-            padding: 10px 0; z-index: 1000;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-        }
-        .nav-item { text-align: center; color: rgba(255,255,255,0.6); cursor: pointer; flex: 1; transition: 0.3s; }
-        .nav-item.active { color: #fff; transform: scale(1.1); text-shadow: 0 0 10px rgba(255,255,255,0.5); }
-        .nav-icon { font-size: 1.4rem; display: block; }
-        .nav-text { font-size: 0.7rem; }
-
-        .tab-content { display: none; animation: fadeIn 0.5s; }
-        .tab-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .balance-pos { color: #76ff03; font-weight: bold; } /* يطلبنا */
-        .balance-neg { color: #ff5252; font-weight: bold; } /* عليه دين */
-
-        option { background-color: #333; color: white; }
-
-        /* عناصر القائمة */
-        .worker-list-item {
-            display: flex; flex-direction: column; 
-            padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);
-            gap: 10px;
-        }
-        .worker-actions {
-            display: flex; gap: 5px; justify-content: flex-end; width: 100%;
-        }
-        .worker-name-click { cursor: pointer; font-weight: bold; font-size: 1.1rem; }
-
-        /* المودال */
-        .modal-content-glass {
-            background: rgba(40, 40, 60, 0.95);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            border-radius: 15px;
-        }
-
-        /* تنسيق خاص لقائمة اختيار العمال للحضور */
-        .selected-workers-list span {
-            display: inline-block;
-            background: rgba(255,255,255,0.2);
-            padding: 5px 10px;
-            border-radius: 15px;
-            margin: 2px;
-            font-size: 0.9rem;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -164,14 +56,42 @@
     <div id="tab-notes" class="tab-content">
         <h3 class="text-center mb-4 fw-bold">📝 الملاحظات</h3>
         
+        <button class="btn btn-dark w-100 mb-3 border-secondary" onclick="toggleSecretSection()">🔐 ملاحظة سرية / الخزنة</button>
+
+        <div id="secretSection" class="glass-card p-3 mb-3" style="display: none; border: 1px solid #ffc107;">
+            <h5 class="text-center text-warning mb-3">💰 الخزنة السرية</h5>
+            
+            <div class="text-center mb-3 p-2" style="background: rgba(0,0,0,0.3); border-radius: 10px;">
+                <small class="text-white-50">المبلغ الكلي المتبقي</small>
+                <h2 id="secretTotalDisplay" class="fw-bold text-warning m-0">0 د.ع</h2>
+            </div>
+
+            <hr class="border-warning">
+
+            <label class="text-white-50 mb-1">إضافة رأس مال (شحن الخزنة):</label>
+            <div class="input-group mb-3">
+                <input type="number" id="addSecretAmount" class="form-control glass-input" placeholder="المبلغ للإضافة">
+                <button class="btn btn-success" onclick="addToSecretTotal()">+ شحن</button>
+            </div>
+
+            <hr class="border-white">
+
+            <label class="text-white-50 mb-1">صرف / تنقيص من الخزنة:</label>
+            <input type="text" id="deductNoteName" class="form-control glass-input mb-2" placeholder="اسم الملاحظة / سبب الصرف">
+            <input type="number" id="deductAmount" class="form-control glass-input mb-2" placeholder="مبلغ الصرف">
+            <button class="btn btn-danger w-100 mb-3" onclick="deductFromSecret()">🔻 تنقيص من المبلغ</button>
+
+            <h6 class="text-white-50">سجل العمليات:</h6>
+            <ul id="secretLogsList" class="list-group" style="max-height: 200px; overflow-y: auto;"></ul>
+        </div>
+        
         <div class="glass-card p-3">
             <label class="mb-2">إضافة ملاحظة جديدة:</label>
             <textarea id="noteText" class="form-control glass-input mb-2" rows="2" placeholder="اكتب الملاحظة هنا..."></textarea>
             <button class="btn btn-primary w-100" onclick="addNote()">حفظ الملاحظة</button>
         </div>
 
-        <div id="notesList">
-            </div>
+        <div id="notesList"></div>
     </div>
 
     <div id="tab-workers" class="tab-content">
@@ -235,6 +155,8 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
+                <button id="resetAttendanceBtn" class="btn btn-danger w-100 mb-3 fw-bold">🗑️ تصفير رصيد الحضور بالكامل</button>
+
                 <div class="text-center mb-3 p-2" style="background: rgba(255,255,255,0.1); border-radius: 10px;">
                     <small class="text-white-50">مجموع الرصيد (من العمل)</small>
                     <h2 id="detailsTotalBalance" class="fw-bold text-success m-0">0 د.ع</h2>
@@ -267,307 +189,6 @@
 </nav>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    // === البيانات ===
-    // history types: 'wage' (حضور), 'loan' (سلفة)
-    let workers = JSON.parse(localStorage.getItem('workersApp_Mod_v3')) || [];
-    let notes = JSON.parse(localStorage.getItem('notesApp_v1')) || [];
-    
-    // متغيرات مؤقتة
-    let tempAttendanceList = [];
-    let currentLoanWorkerIndex = null;
-
-    const loanModal = new bootstrap.Modal(document.getElementById('loanModal'));
-    const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
-
-    window.onload = function() {
-        document.getElementById('attendanceDate').valueAsDate = new Date();
-        document.getElementById('loanDate').valueAsDate = new Date();
-        renderMainTable();
-        updateWorkerSelect();
-        renderNotes();
-        renderWorkersManagement();
-    };
-
-    function formatMoney(amount) {
-        return parseFloat(amount).toLocaleString('en-US') + ' د.ع';
-    }
-
-    function saveData() {
-        localStorage.setItem('workersApp_Mod_v3', JSON.stringify(workers));
-        localStorage.setItem('notesApp_v1', JSON.stringify(notes));
-    }
-
-    function switchTab(tabName, navElement) {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.getElementById('tab-' + tabName).classList.add('active');
-        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-        navElement.classList.add('active');
-        
-        if(tabName === 'home') { renderMainTable(); updateWorkerSelect(); }
-        if(tabName === 'workers') renderWorkersManagement();
-    }
-
-    // === 1. إضافة عامل ===
-    function addNewWorker() {
-        const name = document.getElementById('newWorkerName').value.trim();
-        const wage = document.getElementById('newWorkerWage').value;
-        
-        if(!name) return alert("اكتب الاسم!");
-        
-        workers.push({ 
-            name: name, 
-            defaultWage: wage ? parseFloat(wage) : 25000,
-            history: [] // { date, type: 'wage'|'loan', amount }
-        });
-        saveData();
-        
-        document.getElementById('newWorkerName').value = '';
-        document.getElementById('newWorkerWage').value = '';
-        alert("تم حفظ العامل ✅");
-        updateWorkerSelect();
-    }
-
-    // === 2. الرئيسية (تسجيل الحضور وعرض الرصيد) ===
-    function updateWorkerSelect() {
-        const select = document.getElementById('workerAttendanceSelect');
-        select.innerHTML = '<option value="">اختر عاملاً...</option>';
-        workers.forEach((w, i) => {
-            select.innerHTML += `<option value="${i}">${w.name}</option>`;
-        });
-    }
-
-    function addToTempList() {
-        const select = document.getElementById('workerAttendanceSelect');
-        const index = select.value;
-        if(index === "") return;
-        
-        const workerName = workers[index].name;
-        
-        if(!tempAttendanceList.includes(index)) {
-            tempAttendanceList.push(index);
-            const display = document.getElementById('tempWorkersDisplay');
-            display.innerHTML += `<span>${workerName}</span>`;
-        }
-        select.value = "";
-    }
-
-    function saveBatchAttendance() {
-        const date = document.getElementById('attendanceDate').value;
-        if(!date) return alert("حدد التاريخ أولاً");
-        if(tempAttendanceList.length === 0) return alert("اختر عمالاً للقائمة");
-
-        tempAttendanceList.forEach(index => {
-            let worker = workers[index];
-            worker.history.push({
-                date: date,
-                type: 'wage',
-                amount: worker.defaultWage || 25000
-            });
-        });
-
-        saveData();
-        tempAttendanceList = [];
-        document.getElementById('tempWorkersDisplay').innerHTML = '';
-        alert("تم حفظ الحضور بنجاح ✅");
-        renderMainTable();
-    }
-
-    function renderMainTable() {
-        const tbody = document.getElementById('mainTableBody');
-        tbody.innerHTML = '';
-        let grandTotal = 0;
-
-        workers.forEach((worker, index) => {
-            let totalWages = 0;
-            let daysCount = 0;
-
-            worker.history.forEach(h => {
-                if(h.type === 'wage') {
-                    totalWages += h.amount;
-                    daysCount++;
-                } 
-            });
-
-            let netBalance = totalWages;
-            grandTotal += netBalance;
-            let colorClass = 'balance-pos'; 
-            
-            tbody.innerHTML += `
-                <tr>
-                    <td>${worker.name}</td>
-                    <td>${daysCount} أيام</td>
-                    <td class="${colorClass}" style="direction:ltr">${formatMoney(netBalance)}</td>
-                    <td><button class="btn btn-sm btn-info text-white" onclick="showWorkDetails(${index})">👁️</button></td>
-                </tr>
-            `;
-        });
-
-        const totalEl = document.getElementById('grandTotalDisplay');
-        totalEl.innerText = formatMoney(grandTotal);
-        totalEl.className = "fw-bold m-0 balance-pos";
-    }
-
-    // تم تعديل هذه الدالة لحساب المجموع وعرضه في النافذة
-    function showWorkDetails(index) {
-        const list = document.getElementById('workDatesList');
-        const totalDisplay = document.getElementById('detailsTotalBalance');
-        list.innerHTML = '';
-        
-        const worker = workers[index];
-        const workDays = worker.history.filter(h => h.type === 'wage');
-        
-        let totalWages = 0;
-
-        if(workDays.length === 0) {
-            list.innerHTML = '<li class="list-group-item bg-transparent text-white text-center">لا يوجد أيام عمل مسجلة</li>';
-        } else {
-            [...workDays].reverse().forEach(d => {
-                totalWages += d.amount;
-                list.innerHTML += `
-                    <li class="list-group-item bg-transparent text-white border-light d-flex justify-content-between">
-                        <span>📅 ${d.date}</span>
-                        <span class="text-success">+ ${formatMoney(d.amount)}</span>
-                    </li>`;
-            });
-        }
-        
-        totalDisplay.innerText = formatMoney(totalWages); // عرض المجموع
-        detailsModal.show();
-    }
-
-    // === 3. الملاحظات ===
-    function addNote() {
-        const txt = document.getElementById('noteText').value;
-        if(!txt) return;
-        
-        const noteObj = {
-            id: Date.now(),
-            text: txt,
-            date: new Date().toLocaleDateString('ar-EG')
-        };
-        notes.unshift(noteObj);
-        saveData();
-        document.getElementById('noteText').value = '';
-        renderNotes();
-    }
-
-    function renderNotes() {
-        const container = document.getElementById('notesList');
-        container.innerHTML = '';
-        if(notes.length === 0) {
-            container.innerHTML = '<div class="text-center text-white-50 mt-3">لا توجد ملاحظات</div>';
-            return;
-        }
-        
-        notes.forEach((note) => {
-            container.innerHTML += `
-                <div class="glass-card p-3 d-flex justify-content-between align-items-center">
-                    <div>
-                        <small class="text-warning">${note.date}</small>
-                        <p class="m-0 mt-1">${note.text}</p>
-                    </div>
-                    <button class="btn btn-sm btn-danger" onclick="deleteNote(${note.id})">🗑️</button>
-                </div>
-            `;
-        });
-    }
-
-    function deleteNote(id) {
-        if(confirm("حذف الملاحظة؟")) {
-            notes = notes.filter(n => n.id !== id);
-            saveData();
-            renderNotes();
-        }
-    }
-
-    // === 4. إدارة العمال والسلف (النافذة والأزرار) ===
-    function renderWorkersManagement() {
-        const container = document.getElementById('manageWorkersList');
-        container.innerHTML = '';
-        
-        if(workers.length === 0) {
-            container.innerHTML = '<div class="text-center p-3">لا يوجد عمال.</div>';
-            return;
-        }
-
-        workers.forEach((worker, index) => {
-            container.innerHTML += `
-                <div class="worker-list-item">
-                    <span class="fw-bold">👤 ${worker.name}</span>
-                    <div class="worker-actions">
-                        <button class="btn btn-sm btn-info text-white" onclick="showWorkDetails(${index})">التفاصيل 📄</button>
-                        <button class="btn btn-sm btn-warning" onclick="openLoanModal(${index})">السلفة 💰</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteWorker(${index})">حذف 🗑️</button>
-                    </div>
-                </div>
-            `;
-        });
-    }
-
-    function deleteWorker(index) {
-        if(confirm("هل أنت متأكد من حذف هذا العامل وكل بياناته؟")) {
-            workers.splice(index, 1);
-            saveData();
-            renderWorkersManagement();
-            renderMainTable();
-            updateWorkerSelect();
-        }
-    }
-
-    // --- منطق السلف داخل المودال ---
-    function openLoanModal(index) {
-        currentLoanWorkerIndex = index;
-        const worker = workers[index];
-        document.getElementById('loanWorkerName').innerText = worker.name;
-        document.getElementById('loanDate').valueAsDate = new Date();
-        document.getElementById('loanAmount').value = '';
-        
-        renderLoanData();
-        loanModal.show();
-    }
-
-    function renderLoanData() {
-        const worker = workers[currentLoanWorkerIndex];
-        const tbody = document.getElementById('loanListBody');
-        tbody.innerHTML = '';
-        
-        let totalLoans = 0;
-        const loans = worker.history.filter(h => h.type === 'loan');
-
-        [...loans].reverse().forEach(l => {
-            totalLoans += l.amount;
-            tbody.innerHTML += `
-                <tr class="text-white">
-                    <td>${l.date}</td>
-                    <td>${formatMoney(l.amount)}</td>
-                </tr>
-            `;
-        });
-
-        document.getElementById('totalLoanDisplay').innerText = formatMoney(totalLoans);
-    }
-
-    function saveLoan() {
-        const amount = parseFloat(document.getElementById('loanAmount').value);
-        const date = document.getElementById('loanDate').value;
-        if(!amount || !date) return alert("الرجاء إدخال التاريخ والمبلغ");
-
-        workers[currentLoanWorkerIndex].history.push({ date: date, type: 'loan', amount: amount });
-        saveData();
-        document.getElementById('loanAmount').value = '';
-        renderLoanData();
-    }
-
-    function resetLoans() {
-        if(confirm("هل أنت متأكد من تصفير جميع السلف لهذا العامل؟")) {
-            workers[currentLoanWorkerIndex].history = workers[currentLoanWorkerIndex].history.filter(h => h.type !== 'loan');
-            saveData();
-            renderLoanData();
-        }
-    }
-
-</script>
-
+<script src="script.js"></script>
 </body>
 </html>
