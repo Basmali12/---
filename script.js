@@ -48,6 +48,16 @@ function verifyDelete() {
     return false;
 }
 
+// دالة التحقق من الدخول للتطبيق
+function checkLogin() {
+    const pass = document.getElementById('appPassword').value;
+    if (pass === "123321") {
+        document.getElementById('loginOverlay').style.display = "none";
+    } else {
+        alert("⛔ رمز الدخول خاطئ!");
+    }
+}
+
 // === 1. إضافة عامل ===
 function addNewWorker() {
     const name = document.getElementById('newWorkerName').value.trim();
