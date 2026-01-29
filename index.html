@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سجل العمال - النسخة النهائية</title>
+    <title>سجل العمال - النسخة المعدلة</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         /* الخلفية والأنميشن الأساسي */
@@ -13,7 +13,7 @@
             background-size: 400% 400%;
             animation: gradientBG 15s ease infinite;
             min-height: 100vh;
-            padding-bottom: 90px; /* مسافة للشريط السفلي */
+            padding-bottom: 90px;
             color: #fff;
         }
 
@@ -23,7 +23,7 @@
             100% { background-position: 0% 50%; }
         }
 
-        /* التصميم الزجاجي (Glassmorphism) */
+        /* التصميم الزجاجي */
         .glass-card {
             background: rgba(255, 255, 255, 0.15);
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
@@ -36,19 +36,19 @@
             transition: transform 0.2s;
         }
         
-        .glass-input, .glass-select {
+        .glass-input, .glass-select, textarea {
             background: rgba(255, 255, 255, 0.2) !important;
             border: 1px solid rgba(255, 255, 255, 0.3) !important;
             color: #fff !important;
         }
         
-        .glass-input::placeholder { color: rgba(255, 255, 255, 0.7); }
-        .glass-input:focus {
+        .glass-input::placeholder, textarea::placeholder { color: rgba(255, 255, 255, 0.7); }
+        .glass-input:focus, textarea:focus {
             background: rgba(255, 255, 255, 0.3) !important;
             box-shadow: 0 0 10px rgba(255,255,255,0.2);
         }
 
-        /* تخصيص الجدول الزجاجي */
+        /* تخصيص الجدول */
         .table-glass {
             color: white;
             border-color: rgba(255,255,255,0.2);
@@ -59,7 +59,7 @@
             vertical-align: middle;
         }
 
-        /* الشريط السفلي الزجاجي */
+        /* الشريط السفلي */
         .bottom-nav {
             position: fixed; bottom: 15px; left: 15px; right: 15px;
             background: rgba(255, 255, 255, 0.2);
@@ -75,41 +75,39 @@
         .nav-icon { font-size: 1.4rem; display: block; }
         .nav-text { font-size: 0.7rem; }
 
-        /* أزرار الحضور */
-        .btn-check-custom {
-            font-size: 1.5rem; cursor: pointer; transition: 0.2s;
-            opacity: 0.5; filter: grayscale(100%);
-        }
-        .btn-check-custom.checked {
-            opacity: 1; filter: grayscale(0%); transform: scale(1.2);
-            text-shadow: 0 0 15px #00ff00;
-        }
-
-        /* تحسينات عامة */
         .tab-content { display: none; animation: fadeIn 0.5s; }
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        .balance-pos { color: #76ff03; font-weight: bold; text-shadow: 0 0 5px rgba(0,0,0,0.5); } /* أخضر = يطلبنا */
-        .balance-neg { color: #ff5252; font-weight: bold; text-shadow: 0 0 5px rgba(0,0,0,0.5); } /* أحمر = عليه دين */
+        .balance-pos { color: #76ff03; font-weight: bold; } /* يطلبنا */
+        .balance-neg { color: #ff5252; font-weight: bold; } /* عليه دين */
 
-        /* تخصيص القوائم المنسدلة */
         option { background-color: #333; color: white; }
 
-        /* تنسيق قائمة العمال في التبويب الجديد */
+        /* عناصر القائمة */
         .worker-list-item {
             display: flex; justify-content: space-between; align-items: center;
             padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-        .worker-name-click { cursor: pointer; font-weight: bold; font-size: 1.1rem; text-decoration: underline; text-underline-offset: 4px; }
-        
-        /* Modal Glass */
+        .worker-name-click { cursor: pointer; font-weight: bold; font-size: 1.1rem; }
+
+        /* المودال */
         .modal-content-glass {
             background: rgba(40, 40, 60, 0.95);
             backdrop-filter: blur(15px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             color: white;
             border-radius: 15px;
+        }
+
+        /* تنسيق خاص لقائمة اختيار العمال للحضور */
+        .selected-workers-list span {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 10px;
+            border-radius: 15px;
+            margin: 2px;
+            font-size: 0.9rem;
         }
     </style>
 </head>
@@ -118,10 +116,27 @@
 <div class="container py-4">
 
     <div id="tab-home" class="tab-content active">
-        <h3 class="text-center mb-4 fw-bold" style="text-shadow: 0 2px 4px rgba(0,0,0,0.3);">📋 سجل الحضور</h3>
+        <h3 class="text-center mb-4 fw-bold">📋 سجل الحضور والرواتب</h3>
         
+        <div class="glass-card p-3">
+            <h6 class="mb-2">تسجيل حضور ليوم:</h6>
+            <div class="mb-2">
+                <input type="date" id="attendanceDate" class="form-control glass-input">
+            </div>
+            <div class="input-group mb-2">
+                <select id="workerAttendanceSelect" class="form-select glass-select">
+                    <option value="">اختر عاملاً...</option>
+                </select>
+                <button class="btn btn-warning" onclick="addToTempList()">+ إضافة للقائمة</button>
+            </div>
+            
+            <div id="tempWorkersDisplay" class="selected-workers-list mb-3"></div>
+            
+            <button class="btn btn-success w-100 fw-bold" onclick="saveBatchAttendance()">حفظ الحضور ✅</button>
+        </div>
+
         <div class="glass-card p-3 text-center mb-3">
-            <h6 class="mb-2 text-white-50">إجمالي الديون (المطلوب من العمال)</h6>
+            <h6 class="mb-2 text-white-50">صافي الرصيد الكلي (مستحقات العمال)</h6>
             <h2 id="grandTotalDisplay" class="fw-bold m-0 text-white">0 د.ع</h2>
         </div>
 
@@ -130,62 +145,34 @@
                 <table class="table table-glass text-center mb-0">
                     <thead>
                         <tr>
-                            <th width="10%">#</th>
-                            <th width="40%">الاسم</th>
-                            <th width="20%">حضور</th>
-                            <th width="30%">الصافي (عليه)</th>
+                            <th>الاسم</th>
+                            <th>أيام العمل</th>
+                            <th>الرصيد الصافي</th>
+                            <th>التفاصيل</th>
                         </tr>
                     </thead>
-                    <tbody id="mainTableBody">
-                        </tbody>
+                    <tbody id="mainTableBody"></tbody>
                 </table>
-            </div>
-            <div class="text-center mt-3" id="emptyMsg">
-                <small style="opacity: 0.7;">القائمة فارغة.. أضف عمالاً أولاً 👇</small>
             </div>
         </div>
     </div>
 
-    <div id="tab-loans" class="tab-content">
-        <h3 class="text-center mb-4 fw-bold">💰 إدارة السلف</h3>
+    <div id="tab-notes" class="tab-content">
+        <h3 class="text-center mb-4 fw-bold">📝 الملاحظات</h3>
         
         <div class="glass-card p-3">
-            <label class="mb-2 fw-bold">اختر العامل:</label>
-            <select id="workerSelect" class="form-select glass-select mb-3" onchange="loadWorkerHistory()">
-                <option value="">-- اختر من القائمة --</option>
-            </select>
-
-            <div class="glass-card p-3 text-center mb-3" style="background: rgba(0,0,0,0.2);">
-                <small class="text-light">الرصيد الصافي (المتبقي عليه)</small>
-                <h2 id="dispBalance" class="fw-bold mt-2">0 د.ع</h2>
-            </div>
-
-            <hr style="border-color: rgba(255,255,255,0.3)">
-            
-            <h6>تسجيل حركة جديدة:</h6>
-            <div class="input-group mb-2">
-                <input type="number" id="transAmount" class="form-control glass-input" placeholder="المبلغ بالدينار...">
-            </div>
-            <div class="d-flex gap-2 mb-2">
-                <button class="btn btn-danger flex-grow-1" style="backdrop-filter: blur(5px);" onclick="addTransaction('withdraw')">سحب سلفة (+)</button>
-                <button class="btn btn-info flex-grow-1" style="backdrop-filter: blur(5px); color:white;" onclick="addTransaction('repay')">تسديد (-)</button>
-            </div>
-            <button class="btn btn-success w-100" style="backdrop-filter: blur(5px);" onclick="addTransaction('wage')">تنزيل يومية عمل (ينقص من الدين)</button>
+            <label class="mb-2">إضافة ملاحظة جديدة:</label>
+            <textarea id="noteText" class="form-control glass-input mb-2" rows="2" placeholder="اكتب الملاحظة هنا..."></textarea>
+            <button class="btn btn-primary w-100" onclick="addNote()">حفظ الملاحظة</button>
         </div>
 
-        <h6 class="mt-3 px-2">آخر الحركات:</h6>
-        <div class="glass-card p-2">
-            <table class="table table-glass table-sm text-center mb-0" style="font-size: 0.9rem;">
-                <thead><tr><th>التاريخ</th><th>النوع</th><th>المبلغ</th></tr></thead>
-                <tbody id="historyTableBody"></tbody>
-            </table>
-        </div>
+        <div id="notesList">
+            </div>
     </div>
 
     <div id="tab-workers" class="tab-content">
-        <h3 class="text-center mb-4 fw-bold">👷 إدارة العمال</h3>
-        <div class="glass-card p-2" id="manageWorkersList">
-            </div>
+        <h3 class="text-center mb-4 fw-bold">👷 إدارة العمال والسلف</h3>
+        <div class="glass-card p-2" id="manageWorkersList"></div>
     </div>
 
     <div id="tab-add" class="tab-content">
@@ -195,22 +182,56 @@
                 <label class="form-label">اسم العامل:</label>
                 <input type="text" id="newWorkerName" class="form-control glass-input form-control-lg" placeholder="اكتب الاسم هنا...">
             </div>
+            <div class="mb-4">
+                <label class="form-label">قيمة اليومية (د.ع):</label>
+                <input type="number" id="newWorkerWage" class="form-control glass-input" placeholder="مثلاً 25000">
+            </div>
             <button class="btn btn-light w-100 btn-lg fw-bold" style="color: #333;" onclick="addNewWorker()">حفظ العامل ✅</button>
         </div>
     </div>
 
 </div>
 
-<div class="modal fade" id="attendanceModal" tabindex="-1">
+<div class="modal fade" id="loanModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content modal-content-glass">
             <div class="modal-header border-bottom-0">
-                <h5 class="modal-title" id="attModalTitle">سجل الحضور والغياب</h5>
+                <h5 class="modal-title">💰 إدارة السلف: <span id="loanWorkerName"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <h4 class="mb-2">مجموع السلف</h4>
+                <h2 id="totalLoanDisplay" class="text-danger fw-bold mb-4">0 د.ع</h2>
+                
+                <hr class="border-light">
+                
+                <h6 class="text-start">إضافة سلفة جديدة:</h6>
+                <input type="date" id="loanDate" class="form-control glass-input mb-2">
+                <input type="number" id="loanAmount" class="form-control glass-input mb-2" placeholder="المبلغ بالدينار العراقي">
+                <button class="btn btn-warning w-100 mb-3 fw-bold" onclick="saveLoan()">حفظ السلفة</button>
+                
+                <div class="table-responsive mb-3" style="max-height: 200px; overflow-y: auto;">
+                    <table class="table table-glass table-sm text-center">
+                        <thead><tr><th>التاريخ</th><th>المبلغ</th></tr></thead>
+                        <tbody id="loanListBody"></tbody>
+                    </table>
+                </div>
+
+                <button class="btn btn-outline-danger w-100" onclick="resetLoans()">🔄 تصفير السلف</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="detailsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-glass">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title">تواريخ العمل</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <ul class="list-group mb-3" id="attPresentList" style="max-height: 300px; overflow-y: auto;">
-                    </ul>
+                <ul class="list-group" id="workDatesList" style="max-height: 300px; overflow-y: auto;"></ul>
             </div>
         </div>
     </div>
@@ -221,9 +242,9 @@
         <span class="nav-icon">🏠</span>
         <span class="nav-text">الرئيسية</span>
     </div>
-    <div class="nav-item" onclick="switchTab('loans', this)">
-        <span class="nav-icon">💰</span>
-        <span class="nav-text">السلف</span>
+    <div class="nav-item" onclick="switchTab('notes', this)">
+        <span class="nav-icon">📝</span>
+        <span class="nav-text">ملاحظة</span>
     </div>
     <div class="nav-item" onclick="switchTab('workers', this)">
         <span class="nav-icon">👷</span>
@@ -238,12 +259,23 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // === البيانات ===
-    let workers = JSON.parse(localStorage.getItem('workersApp_Glass_v4')) || [];
-    const attendanceModal = new bootstrap.Modal(document.getElementById('attendanceModal'));
+    // history types: 'wage' (حضور), 'loan' (سلفة)
+    let workers = JSON.parse(localStorage.getItem('workersApp_Mod_v1')) || [];
+    let notes = JSON.parse(localStorage.getItem('notesApp_v1')) || [];
+    
+    // متغيرات مؤقتة
+    let tempAttendanceList = [];
+    let currentLoanWorkerIndex = null;
+
+    const loanModal = new bootstrap.Modal(document.getElementById('loanModal'));
+    const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
 
     window.onload = function() {
+        document.getElementById('attendanceDate').valueAsDate = new Date();
+        document.getElementById('loanDate').valueAsDate = new Date();
         renderMainTable();
-        updateSelectMenu();
+        updateWorkerSelect();
+        renderNotes();
         renderWorkersManagement();
     };
 
@@ -251,165 +283,203 @@
         return parseFloat(amount).toLocaleString('en-US') + ' د.ع';
     }
 
-    // === التنقل بين التبويبات ===
+    function saveData() {
+        localStorage.setItem('workersApp_Mod_v1', JSON.stringify(workers));
+        localStorage.setItem('notesApp_v1', JSON.stringify(notes));
+    }
+
     function switchTab(tabName, navElement) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.getElementById('tab-' + tabName).classList.add('active');
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         navElement.classList.add('active');
         
-        if(tabName === 'home') renderMainTable();
-        if(tabName === 'loans') updateSelectMenu();
+        if(tabName === 'home') { renderMainTable(); updateWorkerSelect(); }
         if(tabName === 'workers') renderWorkersManagement();
     }
 
     // === 1. إضافة عامل ===
     function addNewWorker() {
-        const nameInp = document.getElementById('newWorkerName');
-        const name = nameInp.value.trim();
-        if(!name) return alert("اكتب الاسم!");
-
-        workers.push({ name: name, history: [] });
-        saveData();
-        nameInp.value = '';
+        const name = document.getElementById('newWorkerName').value.trim();
+        const wage = document.getElementById('newWorkerWage').value;
         
-        document.querySelector('.nav-item:first-child').click(); 
+        if(!name) return alert("اكتب الاسم!");
+        
+        workers.push({ 
+            name: name, 
+            defaultWage: wage ? parseFloat(wage) : 25000,
+            history: [] // { date, type: 'wage'|'loan', amount }
+        });
+        saveData();
+        
+        document.getElementById('newWorkerName').value = '';
+        document.getElementById('newWorkerWage').value = '';
+        alert("تم حفظ العامل ✅");
+        updateWorkerSelect();
     }
 
-    // === 2. الرئيسية (الحضور) ===
+    // === 2. الرئيسية (تسجيل الحضور وعرض الرصيد) ===
+    function updateWorkerSelect() {
+        const select = document.getElementById('workerAttendanceSelect');
+        select.innerHTML = '<option value="">اختر عاملاً...</option>';
+        workers.forEach((w, i) => {
+            select.innerHTML += `<option value="${i}">${w.name}</option>`;
+        });
+    }
+
+    function addToTempList() {
+        const select = document.getElementById('workerAttendanceSelect');
+        const index = select.value;
+        if(index === "") return;
+        
+        const workerName = workers[index].name;
+        
+        // منع التكرار
+        if(!tempAttendanceList.includes(index)) {
+            tempAttendanceList.push(index);
+            const display = document.getElementById('tempWorkersDisplay');
+            display.innerHTML += `<span>${workerName}</span>`;
+        }
+        select.value = "";
+    }
+
+    function saveBatchAttendance() {
+        const date = document.getElementById('attendanceDate').value;
+        if(!date) return alert("حدد التاريخ أولاً");
+        if(tempAttendanceList.length === 0) return alert("اختر عمالاً للقائمة");
+
+        tempAttendanceList.forEach(index => {
+            let worker = workers[index];
+            // إضافة سجل حضور (wage)
+            worker.history.push({
+                date: date,
+                type: 'wage',
+                amount: worker.defaultWage || 25000
+            });
+        });
+
+        saveData();
+        tempAttendanceList = [];
+        document.getElementById('tempWorkersDisplay').innerHTML = '';
+        alert("تم حفظ الحضور بنجاح ✅");
+        renderMainTable();
+    }
+
     function renderMainTable() {
         const tbody = document.getElementById('mainTableBody');
         tbody.innerHTML = '';
-        if(workers.length > 0) document.getElementById('emptyMsg').style.display = 'none';
-
-        const today = new Date().toISOString().split('T')[0];
-        let grandTotal = 0; // متغير لحساب المجموع الكلي
+        
+        let grandTotal = 0;
 
         workers.forEach((worker, index) => {
-            const todayRecord = worker.history.find(h => h.date === today && (h.type === 'wage' || h.type === 'absent'));
-            const isPresent = todayRecord && todayRecord.type === 'wage';
-            
-            // حساب الرصيد
-            let balance = calculateBalance(worker);
-            grandTotal += balance; // إضافة الرصيد للمجموع الكلي
+            // حسابات
+            let totalWages = 0;
+            let totalLoans = 0;
+            let daysCount = 0;
 
-            // المنطق: إذا الرصيد موجب (عليه دين) يكون أحمر، إذا سالب (يطلبنا) يكون أخضر
-            let colorClass = balance > 0 ? 'balance-neg' : 'balance-pos';
-            
-            let checkIcon = isPresent ? '✅' : '⬜';
-            let checkClass = isPresent ? 'btn-check-custom checked' : 'btn-check-custom';
+            worker.history.forEach(h => {
+                if(h.type === 'wage') {
+                    totalWages += h.amount;
+                    daysCount++;
+                } else if(h.type === 'loan') {
+                    totalLoans += h.amount;
+                }
+            });
 
+            // الرصيد = المستحقات (يطلبنا) - السلف (عليه)
+            let netBalance = totalWages - totalLoans;
+            grandTotal += netBalance;
+
+            let colorClass = netBalance >= 0 ? 'balance-pos' : 'balance-neg'; // أخضر اذا يطلبنا، أحمر اذا عليه
+            
             tbody.innerHTML += `
                 <tr>
-                    <td>${index + 1}</td>
-                    <td class="fw-bold">${worker.name}</td>
-                    <td><div class="${checkClass}" onclick="toggleAttendance(${index})">${checkIcon}</div></td>
-                    <td class="${colorClass}" style="direction:ltr">${formatMoney(balance)}</td>
+                    <td>${worker.name}</td>
+                    <td>${daysCount} أيام</td>
+                    <td class="${colorClass}" style="direction:ltr">${formatMoney(netBalance)}</td>
+                    <td><button class="btn btn-sm btn-info text-white" onclick="showWorkDetails(${index})">👁️</button></td>
                 </tr>
             `;
         });
 
-        // عرض الرصيد الكلي في الأعلى
-        const grandTotalEl = document.getElementById('grandTotalDisplay');
-        grandTotalEl.innerText = formatMoney(grandTotal);
-        // تلوين المجموع الكلي
-        if(grandTotal > 0) { grandTotalEl.className = "fw-bold m-0 balance-neg"; }
-        else { grandTotalEl.className = "fw-bold m-0 balance-pos"; }
+        const totalEl = document.getElementById('grandTotalDisplay');
+        totalEl.innerText = formatMoney(grandTotal);
+        totalEl.className = grandTotal >= 0 ? "fw-bold m-0 balance-pos" : "fw-bold m-0 balance-neg";
     }
 
-    // دالة تبديل الحضور
-    function toggleAttendance(index) {
-        const today = new Date().toISOString().split('T')[0];
+    function showWorkDetails(index) {
+        const list = document.getElementById('workDatesList');
+        list.innerHTML = '';
         const worker = workers[index];
         
-        const existingRecordIndex = worker.history.findIndex(h => h.date === today && (h.type === 'wage' || h.type === 'absent'));
-        const wasPresent = existingRecordIndex !== -1 && worker.history[existingRecordIndex].type === 'wage';
-
-        if (existingRecordIndex !== -1) {
-            worker.history.splice(existingRecordIndex, 1);
-        }
-
-        if (wasPresent) {
-            if(confirm("تحويل الحالة إلى غياب؟")) {
-                worker.history.push({ date: today, type: 'absent', amount: 0 });
-            } else {
-                worker.history.push({ date: today, type: 'wage', amount: 25000 });
-            }
+        // تصفية تواريخ العمل فقط
+        const workDays = worker.history.filter(h => h.type === 'wage');
+        
+        if(workDays.length === 0) {
+            list.innerHTML = '<li class="list-group-item bg-transparent text-white text-center">لا يوجد أيام عمل مسجلة</li>';
         } else {
-            let wage = prompt("أدخل قيمة اليومية للعامل " + worker.name + ":", "25000");
-            if (wage && !isNaN(wage)) {
-                worker.history.push({ date: today, type: 'wage', amount: parseFloat(wage) });
-            }
+            // ترتيب تنازلي
+            [...workDays].reverse().forEach(d => {
+                list.innerHTML += `
+                    <li class="list-group-item bg-transparent text-white border-light d-flex justify-content-between">
+                        <span>📅 ${d.date}</span>
+                        <span class="text-success">+ ${formatMoney(d.amount)}</span>
+                    </li>`;
+            });
+        }
+        detailsModal.show();
+    }
+
+    // === 3. الملاحظات ===
+    function addNote() {
+        const txt = document.getElementById('noteText').value;
+        if(!txt) return;
+        
+        const noteObj = {
+            id: Date.now(),
+            text: txt,
+            date: new Date().toLocaleDateString('ar-EG')
+        };
+        notes.unshift(noteObj); // إضافة في البداية
+        saveData();
+        document.getElementById('noteText').value = '';
+        renderNotes();
+    }
+
+    function renderNotes() {
+        const container = document.getElementById('notesList');
+        container.innerHTML = '';
+        if(notes.length === 0) {
+            container.innerHTML = '<div class="text-center text-white-50 mt-3">لا توجد ملاحظات</div>';
+            return;
         }
         
-        saveData();
-        renderMainTable();
-    }
-
-    // === 3. السلف ===
-    function updateSelectMenu() {
-        const select = document.getElementById('workerSelect');
-        const oldVal = select.value;
-        select.innerHTML = '<option value="">-- اختر --</option>';
-        workers.forEach((w, i) => { select.innerHTML += `<option value="${i}">${w.name}</option>`; });
-        select.value = oldVal;
-    }
-
-    function loadWorkerHistory() {
-        const index = document.getElementById('workerSelect').value;
-        const tbody = document.getElementById('historyTableBody');
-        const dispBal = document.getElementById('dispBalance');
-
-        tbody.innerHTML = '';
-        if(index === "") { dispBal.innerText = "0 د.ع"; return; }
-
-        const worker = workers[index];
-        let totalWithdraw = 0;
-        let totalRepayAndWage = 0;
-
-        [...worker.history].reverse().forEach(h => {
-            if(h.type === 'absent') return;
-
-            if(h.type === 'withdraw') totalWithdraw += h.amount;
-            else totalRepayAndWage += h.amount;
-
-            let typeText = h.type === 'withdraw' ? 'سلفة' : (h.type === 'repay' ? 'تسديد' : 'يومية');
-            let color = h.type === 'withdraw' ? 'text-danger' : 'text-success';
-
-            tbody.innerHTML += `
-                <tr><td>${h.date}</td><td class="${color} fw-bold">${typeText}</td><td>${formatMoney(h.amount)}</td></tr>
+        notes.forEach((note) => {
+            container.innerHTML += `
+                <div class="glass-card p-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-warning">${note.date}</small>
+                        <p class="m-0 mt-1">${note.text}</p>
+                    </div>
+                    <button class="btn btn-sm btn-danger" onclick="deleteNote(${note.id})">🗑️</button>
+                </div>
             `;
         });
-
-        // التعديل الثاني: المعادلة (السلف - العمل)
-        // إذا كان الناتج موجب = عليه دين
-        let finalBal = totalWithdraw - totalRepayAndWage;
-        
-        dispBal.innerText = formatMoney(finalBal);
-        if(finalBal > 0) dispBal.className = "fw-bold mt-2 balance-neg"; // أحمر
-        else dispBal.className = "fw-bold mt-2 balance-pos"; // أخضر
     }
 
-    function addTransaction(type) {
-        const index = document.getElementById('workerSelect').value;
-        const amount = parseFloat(document.getElementById('transAmount').value);
-        if(index === "") return alert("اختر العامل أولاً");
-        if(!amount) return alert("ادخل المبلغ");
-
-        workers[index].history.push({
-            date: new Date().toISOString().split('T')[0],
-            type: type, amount: amount
-        });
-        saveData();
-        document.getElementById('transAmount').value = '';
-        loadWorkerHistory(); 
+    function deleteNote(id) {
+        if(confirm("حذف الملاحظة؟")) {
+            notes = notes.filter(n => n.id !== id);
+            saveData();
+            renderNotes();
+        }
     }
 
-    // === 4. تبويب العمال (إدارة) ===
+    // === 4. إدارة العمال والسلف (النافذة والزر) ===
     function renderWorkersManagement() {
         const container = document.getElementById('manageWorkersList');
         container.innerHTML = '';
-
+        
         if(workers.length === 0) {
             container.innerHTML = '<div class="text-center p-3">لا يوجد عمال.</div>';
             return;
@@ -418,69 +488,87 @@
         workers.forEach((worker, index) => {
             container.innerHTML += `
                 <div class="worker-list-item">
-                    <span class="worker-name-click" onclick="showWorkerDetails(${index})">
-                       <span class="text-warning ms-2">#${index + 1}</span> 👤 ${worker.name}
-                    </span>
-                    <button class="btn btn-sm btn-danger" onclick="deleteWorker(${index})">
-                        حذف 🗑️
-                    </button>
+                    <span class="fw-bold">👤 ${worker.name}</span>
+                    <div>
+                        <button class="btn btn-sm btn-warning ms-1" onclick="openLoanModal(${index})">السلفة 💰</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteWorker(${index})">حذف 🗑️</button>
+                    </div>
                 </div>
             `;
         });
     }
 
     function deleteWorker(index) {
-        if(confirm("⚠️ تحذير: هل أنت متأكد من حذف هذا العامل وسجلاته؟")) {
+        if(confirm("هل أنت متأكد من حذف هذا العامل وكل بياناته؟")) {
             workers.splice(index, 1);
             saveData();
             renderWorkersManagement();
             renderMainTable();
+            updateWorkerSelect();
         }
     }
 
-    function showWorkerDetails(index) {
+    // --- منطق السلف داخل المودال ---
+    function openLoanModal(index) {
+        currentLoanWorkerIndex = index;
         const worker = workers[index];
-        const listContainer = document.getElementById('attPresentList');
-        document.getElementById('attModalTitle').innerText = "سجل: " + worker.name;
+        document.getElementById('loanWorkerName').innerText = worker.name;
+        document.getElementById('loanDate').valueAsDate = new Date(); // reset date
+        document.getElementById('loanAmount').value = ''; // reset amount
         
-        listContainer.innerHTML = '';
-        
-        const days = worker.history.filter(h => h.type === 'wage' || h.type === 'absent');
-        
-        if(days.length === 0) {
-            listContainer.innerHTML = '<li class="list-group-item bg-transparent text-white border-0 text-center">لا يوجد سجل حتى الآن</li>';
-        } else {
-            [...days].reverse().forEach(day => {
-                let badge = '';
-                if(day.type === 'wage') badge = '<span class="badge bg-success">✅ حاضر</span>';
-                else badge = '<span class="badge bg-danger">❌ غائب</span>';
-
-                listContainer.innerHTML += `
-                    <li class="list-group-item bg-transparent text-white border-light d-flex justify-content-between">
-                        <span>📅 ${day.date}</span>
-                        ${badge}
-                    </li>
-                `;
-            });
-        }
-        
-        attendanceModal.show();
+        renderLoanData();
+        loanModal.show();
     }
 
-    // === أدوات ===
-    // التعديل الثاني (المعادلة العامة): الرصيد = السلف - العمل
-    function calculateBalance(worker) {
-        let credit = 0, debit = 0;
-        worker.history.forEach(h => {
-            if(h.type === 'wage' || h.type === 'repay') credit += h.amount;
-            if(h.type === 'withdraw') debit += h.amount;
+    function renderLoanData() {
+        const worker = workers[currentLoanWorkerIndex];
+        const tbody = document.getElementById('loanListBody');
+        tbody.innerHTML = '';
+        
+        let totalLoans = 0;
+        const loans = worker.history.filter(h => h.type === 'loan');
+
+        [...loans].reverse().forEach(l => {
+            totalLoans += l.amount;
+            tbody.innerHTML += `
+                <tr>
+                    <td>${l.date}</td>
+                    <td>${formatMoney(l.amount)}</td>
+                </tr>
+            `;
         });
-        return debit - credit; // السحب (عليه) - العمل (له)
+
+        document.getElementById('totalLoanDisplay').innerText = formatMoney(totalLoans);
     }
 
-    function saveData() {
-        localStorage.setItem('workersApp_Glass_v4', JSON.stringify(workers));
+    function saveLoan() {
+        const amount = parseFloat(document.getElementById('loanAmount').value);
+        const date = document.getElementById('loanDate').value;
+        
+        if(!amount || !date) return alert("الرجاء إدخال التاريخ والمبلغ");
+
+        workers[currentLoanWorkerIndex].history.push({
+            date: date,
+            type: 'loan',
+            amount: amount
+        });
+        
+        saveData();
+        document.getElementById('loanAmount').value = '';
+        renderLoanData();
+        renderMainTable(); // لتحديث الرصيد في الخلفية
     }
+
+    function resetLoans() {
+        if(confirm("هل أنت متأكد من تصفير جميع السلف لهذا العامل؟ (سيتم حذف سجل السلف فقط)")) {
+            // حذف كل العناصر التي نوعها 'loan' من سجل العامل
+            workers[currentLoanWorkerIndex].history = workers[currentLoanWorkerIndex].history.filter(h => h.type !== 'loan');
+            saveData();
+            renderLoanData();
+            renderMainTable();
+        }
+    }
+
 </script>
 
 </body>
