@@ -201,7 +201,7 @@
             </div>
             <div class="modal-body text-center">
                 <h4 class="mb-2">مجموع السلف</h4>
-                <h2 id="totalLoanDisplay" class="text-danger fw-bold mb-4">0 د.ع</h2>
+                <h2 id="totalLoanDisplay" class="text-white fw-bold mb-4">0 د.ع</h2>
                 
                 <hr class="border-light">
                 
@@ -260,7 +260,7 @@
 <script>
     // === البيانات ===
     // history types: 'wage' (حضور), 'loan' (سلفة)
-    let workers = JSON.parse(localStorage.getItem('workersApp_Mod_v1')) || [];
+    let workers = JSON.parse(localStorage.getItem('workersApp_Mod_v2')) || [];
     let notes = JSON.parse(localStorage.getItem('notesApp_v1')) || [];
     
     // متغيرات مؤقتة
@@ -284,7 +284,7 @@
     }
 
     function saveData() {
-        localStorage.setItem('workersApp_Mod_v1', JSON.stringify(workers));
+        localStorage.setItem('workersApp_Mod_v2', JSON.stringify(workers));
         localStorage.setItem('notesApp_v1', JSON.stringify(notes));
     }
 
@@ -374,23 +374,24 @@
         workers.forEach((worker, index) => {
             // حسابات
             let totalWages = 0;
-            let totalLoans = 0;
+            // let totalLoans = 0; // تم إيقاف تأثير السلف على الرئيسية
+
             let daysCount = 0;
 
             worker.history.forEach(h => {
                 if(h.type === 'wage') {
                     totalWages += h.amount;
                     daysCount++;
-                } else if(h.type === 'loan') {
-                    totalLoans += h.amount;
-                }
+                } 
+                // تم تجاهل السلف هنا
             });
 
-            // الرصيد = المستحقات (يطلبنا) - السلف (عليه)
-            let netBalance = totalWages - totalLoans;
+            // الرصيد في الرئيسية = مجموع اليوميات فقط (الأرباح)
+            let netBalance = totalWages;
             grandTotal += netBalance;
 
-            let colorClass = netBalance >= 0 ? 'balance-pos' : 'balance-neg'; // أخضر اذا يطلبنا، أحمر اذا عليه
+            // دائماً إيجابي لأنه يوميات فقط
+            let colorClass = 'balance-pos'; 
             
             tbody.innerHTML += `
                 <tr>
@@ -404,7 +405,7 @@
 
         const totalEl = document.getElementById('grandTotalDisplay');
         totalEl.innerText = formatMoney(grandTotal);
-        totalEl.className = grandTotal >= 0 ? "fw-bold m-0 balance-pos" : "fw-bold m-0 balance-neg";
+        totalEl.className = "fw-bold m-0 balance-pos";
     }
 
     function showWorkDetails(index) {
@@ -530,8 +531,9 @@
 
         [...loans].reverse().forEach(l => {
             totalLoans += l.amount;
+            // تم جعل اللون أبيض بالكامل داخل القائمة
             tbody.innerHTML += `
-                <tr>
+                <tr class="text-white">
                     <td>${l.date}</td>
                     <td>${formatMoney(l.amount)}</td>
                 </tr>
