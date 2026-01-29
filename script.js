@@ -1,14 +1,11 @@
 // === البيانات ===
-// history types: 'wage' (حضور), 'loan' (سلفة)
 let workers = JSON.parse(localStorage.getItem('workersApp_Mod_v3')) || [];
 let notes = JSON.parse(localStorage.getItem('notesApp_v1')) || [];
-// بيانات الخزنة السرية
 let secretVault = JSON.parse(localStorage.getItem('secretVault_v1')) || { total: 0, logs: [] };
 
-// متغيرات مؤقتة
 let tempAttendanceList = [];
 let currentLoanWorkerIndex = null;
-let currentDetailWorkerIndex = null; // لتتبع العامل المفتوح في التفاصيل
+let currentDetailWorkerIndex = null;
 
 const loanModal = new bootstrap.Modal(document.getElementById('loanModal'));
 const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
@@ -20,7 +17,7 @@ window.onload = function() {
     updateWorkerSelect();
     renderNotes();
     renderWorkersManagement();
-    renderSecretSection(); // عرض بيانات الخزنة
+    renderSecretSection();
 };
 
 function formatMoney(amount) {
@@ -43,6 +40,14 @@ function switchTab(tabName, navElement) {
     if(tabName === 'workers') renderWorkersManagement();
 }
 
+// دالة التحقق من الرمز للحذف
+function verifyDelete() {
+    const code = prompt("🔒 هذا الإجراء محمي. أدخل الرمز (123) للتأكيد:");
+    if (code === "123") return true;
+    alert("⛔ رمز خاطئ! تم إلغاء العملية.");
+    return false;
+}
+
 // === 1. إضافة عامل ===
 function addNewWorker() {
     const name = document.getElementById('newWorkerName').value.trim();
@@ -63,7 +68,7 @@ function addNewWorker() {
     updateWorkerSelect();
 }
 
-// === 2. الرئيسية (تسجيل الحضور وعرض الرصيد) ===
+// === 2. الرئيسية ===
 function updateWorkerSelect() {
     const select = document.getElementById('workerAttendanceSelect');
     select.innerHTML = '<option value="">اختر عاملاً...</option>';
@@ -143,9 +148,9 @@ function renderMainTable() {
     totalEl.className = "fw-bold m-0 balance-pos";
 }
 
-// === تفاصيل الحضور (مع التعديلات الجديدة: التصفير والتعديل) ===
+// === تفاصيل الحضور وتعديله ===
 function showWorkDetails(index) {
-    currentDetailWorkerIndex = index; // حفظ مؤشر العامل الحالي
+    currentDetailWorkerIndex = index;
     const list = document.getElementById('workDatesList');
     const totalDisplay = document.getElementById('detailsTotalBalance');
     const resetBtn = document.getElementById('resetAttendanceBtn');
@@ -153,18 +158,14 @@ function showWorkDetails(index) {
     list.innerHTML = '';
     
     const worker = workers[index];
-    // ربط زر التصفير بالدالة
     resetBtn.onclick = function() { resetWorkerAttendance(index); };
 
-    // جلب كل العناصر التي هي من نوع 'wage' مع الاحتفاظ بموقعها الأصلي في المصفوفة للتعديل
     let workItems = worker.history.map((h, i) => ({...h, originalIndex: i})).filter(h => h.type === 'wage');
-    
     let totalWages = 0;
 
     if(workItems.length === 0) {
         list.innerHTML = '<li class="list-group-item bg-transparent text-white text-center">لا يوجد أيام عمل مسجلة</li>';
     } else {
-        // عرض العناصر بالعكس (الأحدث أولاً)
         [...workItems].reverse().forEach(d => {
             totalWages += d.amount;
             list.innerHTML += `
@@ -184,36 +185,32 @@ function showWorkDetails(index) {
     detailsModal.show();
 }
 
-// دالة تصفير رصيد الحضور (تحذف كل عمليات wage للعامل المحدد)
 function resetWorkerAttendance(index) {
-    if(confirm("هل أنت متأكد من تصفير رصيد الحضور لهذا العامل بالكامل؟ سيتم حذف جميع الأيام المسجلة.")) {
-        // الإبقاء فقط على السلف وحذف الأجور
+    if(confirm("هل أنت متأكد من تصفير رصيد الحضور؟")) {
+        if(!verifyDelete()) return; // طلب الرمز
+        
         workers[index].history = workers[index].history.filter(h => h.type !== 'wage');
         saveData();
         renderMainTable();
-        showWorkDetails(index); // تحديث المودال وهو مفتوح
+        showWorkDetails(index);
     }
 }
 
-// دالة تعديل سجل حضور محدد (قلم التعديل)
 function editAttendanceEntry(workerIndex, historyIndex) {
     const entry = workers[workerIndex].history[historyIndex];
     const newAmount = prompt("قم بتعديل المبلغ:", entry.amount);
     
     if (newAmount !== null && newAmount.trim() !== "") {
         const currentDate = new Date().toISOString().split('T')[0];
-        
-        // تحديث القيمة والتاريخ ليظهر تاريخ التعديل
         workers[workerIndex].history[historyIndex].amount = parseFloat(newAmount);
-        workers[workerIndex].history[historyIndex].date = currentDate; // تحديث التاريخ لتاريخ التعديل
-        
+        workers[workerIndex].history[historyIndex].date = currentDate;
         saveData();
         renderMainTable();
-        showWorkDetails(workerIndex); // تحديث المودال
+        showWorkDetails(workerIndex);
     }
 }
 
-// === 3. الملاحظات (مع القسم السري الجديد) ===
+// === 3. الملاحظات (والقسم السري) ===
 function addNote() {
     const txt = document.getElementById('noteText').value;
     if(!txt) return;
@@ -252,6 +249,7 @@ function renderNotes() {
 
 function deleteNote(id) {
     if(confirm("حذف الملاحظة؟")) {
+        if(!verifyDelete()) return; // طلب الرمز
         notes = notes.filter(n => n.id !== id);
         saveData();
         renderNotes();
@@ -266,26 +264,41 @@ function toggleSecretSection() {
 
 function renderSecretSection() {
     document.getElementById('secretTotalDisplay').innerText = formatMoney(secretVault.total);
-    
     const list = document.getElementById('secretLogsList');
     list.innerHTML = '';
     
-    [...secretVault.logs].reverse().forEach(log => {
+    // التكرار بالعكس لعرض الأحدث أولاً مع الحفاظ على الفهرس الصحيح
+    for (let i = secretVault.logs.length - 1; i >= 0; i--) {
+        let log = secretVault.logs[i];
         list.innerHTML += `
-            <li class="list-group-item bg-transparent text-white border-light d-flex justify-content-between">
-                <span>${log.name}</span>
+            <li class="list-group-item bg-transparent text-white border-light d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-sm text-danger border-0 p-0 me-2 fw-bold" onclick="deleteSecretLog(${i})">❌</button>
+                    <span>${log.name}</span>
+                </div>
                 <span class="text-danger">-${formatMoney(log.amount)}</span>
             </li>
         `;
-    });
+    }
+}
+
+function deleteSecretLog(index) {
+    if(confirm("هل تريد حذف هذا السجل من الخزنة؟")) {
+        if(!verifyDelete()) return; // طلب الرمز
+        
+        // استرجاع المبلغ (اختياري، هنا نحذف السجل فقط حسب الطلب)
+        // secretVault.total += secretVault.logs[index].amount; 
+        
+        secretVault.logs.splice(index, 1);
+        saveData();
+        renderSecretSection();
+    }
 }
 
 function addToSecretTotal() {
     const amount = parseFloat(document.getElementById('addSecretAmount').value);
     if (!amount) return;
-    
     secretVault.total += amount;
-    // اختياري: تسجيل عملية الإضافة في السجل إذا أردت، هنا نزيد الرصيد فقط
     saveData();
     document.getElementById('addSecretAmount').value = '';
     renderSecretSection();
@@ -295,7 +308,6 @@ function addToSecretTotal() {
 function deductFromSecret() {
     const name = document.getElementById('deductNoteName').value;
     const amount = parseFloat(document.getElementById('deductAmount').value);
-    
     if (!name || !amount) return alert("الرجاء إدخال الاسم والمبلغ");
     if (amount > secretVault.total) return alert("الرصيد غير كافي!");
     
@@ -312,7 +324,7 @@ function deductFromSecret() {
     renderSecretSection();
 }
 
-// === 4. إدارة العمال والسلف (النافذة والأزرار) ===
+// === 4. إدارة العمال والسلف ===
 function renderWorkersManagement() {
     const container = document.getElementById('manageWorkersList');
     container.innerHTML = '';
@@ -338,6 +350,7 @@ function renderWorkersManagement() {
 
 function deleteWorker(index) {
     if(confirm("هل أنت متأكد من حذف هذا العامل وكل بياناته؟")) {
+        if(!verifyDelete()) return; // طلب الرمز
         workers.splice(index, 1);
         saveData();
         renderWorkersManagement();
@@ -353,7 +366,6 @@ function openLoanModal(index) {
     document.getElementById('loanWorkerName').innerText = worker.name;
     document.getElementById('loanDate').valueAsDate = new Date();
     document.getElementById('loanAmount').value = '';
-    
     renderLoanData();
     loanModal.show();
 }
@@ -362,7 +374,6 @@ function renderLoanData() {
     const worker = workers[currentLoanWorkerIndex];
     const tbody = document.getElementById('loanListBody');
     tbody.innerHTML = '';
-    
     let totalLoans = 0;
     const loans = worker.history.filter(h => h.type === 'loan');
 
@@ -392,6 +403,7 @@ function saveLoan() {
 
 function resetLoans() {
     if(confirm("هل أنت متأكد من تصفير جميع السلف لهذا العامل؟")) {
+        if(!verifyDelete()) return; // طلب الرمز
         workers[currentLoanWorkerIndex].history = workers[currentLoanWorkerIndex].history.filter(h => h.type !== 'loan');
         saveData();
         renderLoanData();
